@@ -130,7 +130,134 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .route-flow,
-  .hazard-zone {
-    animation: none;
+  .hazard-zone,
+  .animate-wave-slow,
+  .animate-wave-fast,
+  .animate-water-float,
+  .water-ripple,
+  .water-bubble,
+  .animate-shimmer {
+    animation: none !important;
   }
+}
+
+/* Water Loading Screen Fluid Animations */
+@keyframes water-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.animate-water-float {
+  animation: water-float 3.5s ease-in-out infinite;
+}
+
+@keyframes water-ripple {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+.water-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  pointer-events: none;
+}
+.water-ripple.ring-1 {
+  animation: water-ripple 3s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.water-ripple.ring-2 {
+  animation: water-ripple 3s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  animation-delay: 1s;
+}
+.water-ripple.ring-3 {
+  animation: water-ripple 3s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  animation-delay: 2s;
+}
+
+@keyframes wave-h {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.animate-wave-slow {
+  animation: wave-h 12s linear infinite;
+}
+.animate-wave-fast {
+  animation: wave-h 7s linear infinite;
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(100vh) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-20vh) scale(1.2);
+    opacity: 0;
+  }
+}
+.water-bubble {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.7), rgba(56, 189, 248, 0.15));
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+.water-bubble.b1 {
+  width: 24px;
+  height: 24px;
+  left: 15%;
+  animation: bubble-rise 6s ease-in infinite;
+  animation-delay: 0.2s;
+}
+.water-bubble.b2 {
+  width: 14px;
+  height: 14px;
+  left: 35%;
+  animation: bubble-rise 8s ease-in infinite;
+  animation-delay: 2.5s;
+}
+.water-bubble.b3 {
+  width: 32px;
+  height: 32px;
+  left: 75%;
+  animation: bubble-rise 7s ease-in infinite;
+  animation-delay: 1.2s;
+}
+.water-bubble.b4 {
+  width: 18px;
+  height: 18px;
+  left: 88%;
+  animation: bubble-rise 5s ease-in infinite;
+  animation-delay: 3.8s;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.animate-shimmer {
+  animation: shimmer 1.8s infinite;
 }

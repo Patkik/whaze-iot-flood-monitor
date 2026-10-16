@@ -3,6 +3,7 @@ import { NavLink, Outlet, Link } from 'react-router-dom';
 import { Icon, LevelBadge } from './ui';
 import { alerts, telemetry } from '../lib/stores';
 import { beep } from '../lib/audio';
+import WaterLoadingScreen from './WaterLoadingScreen';
 
 const NAV = [
   { to: '/', label: 'Monitor', icon: 'pulse' },
@@ -78,6 +79,7 @@ export default function Shell() {
   const t = telemetry.use();
   const list = alerts.use();
   const [open, setOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('whaze_water_splash_seen'));
 
   // Piezo loop mirrors the ESP32 buzzer while critical and not muted.
   useEffect(() => {
@@ -89,10 +91,21 @@ export default function Shell() {
 
   return (
     <div className="min-h-screen lg:pl-60">
+      {/* Water-inspired splash/loading screen */}
+      {showSplash && (
+        <WaterLoadingScreen
+          minDurationMs={2000}
+          onComplete={() => {
+            sessionStorage.setItem('whaze_water_splash_seen', '1');
+            setShowSplash(false);
+          }}
+        />
+      )}
+
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-surface p-4 lg:flex">
         <Link to="/" className="mb-6 flex items-center gap-3">
-          <img src="/logo.png" alt="" className="h-9 w-9 rounded-lg" />
+          <img src="/logo.png" alt="Whaze" className="h-10 w-10 object-contain drop-shadow-sm" />
           <div className="leading-tight">
             <div className="text-[15px] font-semibold">Whaze</div>
             <div className="text-xs text-faint">Flood early warning</div>
@@ -121,7 +134,7 @@ export default function Shell() {
       {/* Top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur lg:px-8">
         <Link to="/" className="flex items-center gap-2 lg:hidden">
-          <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg" />
+          <img src="/logo.png" alt="Whaze" className="h-8 w-8 object-contain drop-shadow-sm" />
           <span className="text-[15px] font-semibold">Whaze</span>
         </Link>
         <div className="hidden text-sm text-muted lg:block">Brgy. Narra and Yakal, CSJDM</div>

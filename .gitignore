@@ -3,3 +3,13 @@ dist
 dev-dist
 *.local
 .vercel
+scratch_*.mjs
+
+# Android build outputs
+.gradle
+android/.gradle
+android/build
+android/app/build
+android/capacitor-cordova-android-plugins/build
+*.apk
+*.aab
