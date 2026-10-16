@@ -445,6 +445,7 @@ summary:focus-visible {
   border-radius: 50%;
   background: var(--accent-blue);
   flex-shrink: 0;
+  animation: pulseDot 2s infinite ease-in-out;
 }
 
 .connection-pill.live {
@@ -519,8 +520,19 @@ summary:focus-visible {
 }
 
 /* ==========================================================================
-   MAIN 12-COLUMN / 2-PANE WORKSPACE GRID (Linear 8pt Grid)
+   MAIN 12-COLUMN / 2-PANE WORKSPACE GRID (Linear 8pt Grid + Smooth Entry)
    ========================================================================== */
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -549,6 +561,7 @@ summary:focus-visible {
   box-shadow: var(--shadow-card);
   width: 100%;
   min-width: 0;
+  animation: cardFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media (min-width: 640px) {
@@ -586,7 +599,7 @@ summary:focus-visible {
 }
 
 /* ==========================================================================
-   HYDROLOGICAL TELEMETRY INSTRUMENT CARD (Deslopified Status Card)
+   HYDROLOGICAL TELEMETRY INSTRUMENT CARD
    ========================================================================== */
 .status-card {
   background: var(--card);
@@ -597,6 +610,8 @@ summary:focus-visible {
   margin-bottom: 16px;
   box-shadow: var(--shadow-card);
   position: relative;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+  animation: cardFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media (min-width: 640px) {
@@ -661,6 +676,7 @@ summary:focus-visible {
   border: 1px solid var(--status-safe-border);
   background: var(--status-safe-bg);
   color: var(--status-safe-fg);
+  transition: all 0.2s ease;
 }
 
 .state-warning .status-badge-inline {
@@ -715,7 +731,7 @@ summary:focus-visible {
   height: 8px;
   border-radius: 50%;
   background: #D4D4D8;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .led-bulb span {
@@ -727,7 +743,7 @@ summary:focus-visible {
 
 .led-circle.active-green {
   background: #16A34A;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.22);
 }
 .led-circle.active-green + span {
   color: var(--foreground);
@@ -735,7 +751,7 @@ summary:focus-visible {
 
 .led-circle.active-yellow {
   background: #D97706;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22);
 }
 .led-circle.active-yellow + span {
   color: var(--foreground);
@@ -743,14 +759,14 @@ summary:focus-visible {
 
 .led-circle.active-red {
   background: #DC2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.28);
   animation: pulseDot 0.8s infinite;
 }
 .led-circle.active-red + span {
   color: #B91C1C;
 }
 
-/* Ultrasonic Water Level Scale Bar with Threshold Ticks */
+/* Ultrasonic Water Level Scale Bar with Animated Flow Shimmer & Threshold Ticks */
 .water-gauge-wrapper {
   margin-top: 20px;
   padding: 12px;
@@ -800,11 +816,28 @@ summary:focus-visible {
   background: #DC2626;
 }
 
+@keyframes gaugeWave {
+  0% { background-position: 0 0; }
+  100% { background-position: 24px 0; }
+}
+
 .water-gauge-fill {
   height: 100%;
   width: 12%;
-  background: #16A34A;
-  transition: width 0.2s ease, background-color 0.2s ease;
+  background-color: #16A34A;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.18) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.18) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 24px 24px;
+  animation: gaugeWave 1.2s linear infinite;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease;
 }
 
 /* Quantitative Telemetry Strip (Concentric Inner Radius = 8px) */
@@ -876,12 +909,16 @@ summary:focus-visible {
   font-weight: 500;
   font-family: var(--font-mono);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 .preset-btn:hover {
   background: var(--muted);
   border-color: var(--border-strong);
+}
+
+.preset-btn:active {
+  transform: scale(0.98);
 }
 
 .preset-btn .status-dot {
@@ -1009,12 +1046,13 @@ input[type="range"] {
   color: var(--foreground);
   margin-bottom: 10px;
   box-shadow: var(--shadow-card);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
 .menu-card:hover {
   border-color: var(--border-strong);
   background: var(--muted-surface);
+  transform: translateX(2px);
 }
 
 .menu-card-left {
@@ -1063,6 +1101,12 @@ input[type="range"] {
   font-family: var(--font-mono);
   color: var(--subtle-foreground);
   flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.menu-card:hover .arrow {
+  transform: translateX(3px);
+  color: var(--foreground);
 }
 
 /* ==========================================================================
@@ -1169,7 +1213,11 @@ details.tech-Accordion summary::-webkit-details-marker {
   cursor: pointer;
   text-decoration: none;
   text-align: center;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn-primary {
@@ -1285,11 +1333,11 @@ table.data-table th {
 }
 
 /* ==========================================================================
-   LEAFLET MAP STYLES (evacuation.html)
+   LEAFLET MAP & ANIMATED ROUTE POLYLINE STYLES (evacuation.html)
    ========================================================================== */
 #evacuation-map {
   width: 100%;
-  height: clamp(320px, 54vh, 520px);
+  height: clamp(340px, 56vh, 540px);
   border-radius: var(--radius-inner);
   border: 1px solid var(--border);
   z-index: 10;
@@ -1297,8 +1345,81 @@ table.data-table th {
 
 @media (min-width: 900px) {
   #evacuation-map {
-    height: 520px;
+    height: 540px;
   }
+}
+
+/* Animated Marching Flow Along Street-Snapped Evacuation Polyline */
+@keyframes routeFlowAnimation {
+  from {
+    stroke-dashoffset: 28;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+path.animated-evac-route {
+  stroke-dasharray: 10, 8;
+  animation: routeFlowAnimation 0.85s linear infinite;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Breathing Pulse Animation on Hazard Zone Circle */
+@keyframes hazardPulse {
+  0%, 100% {
+    fill-opacity: 0.16;
+    stroke-width: 1.5px;
+  }
+  50% {
+    fill-opacity: 0.32;
+    stroke-width: 2.5px;
+  }
+}
+
+path.animated-hazard-zone {
+  animation: hazardPulse 2.4s ease-in-out infinite;
+}
+
+/* Sonar Pulse Ring on Map Pin Badges */
+@keyframes sonarRing {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.pin-pulse-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pin-pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: inherit;
+  animation: sonarRing 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Traveling Pedestrian Evacuation Beacon on Route */
+.route-glider-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #16A34A;
+  border: 2.5px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(22, 163, 74, 0.28);
+  transform: translate(-50%, -50%);
 }
 
 .map-legend {
@@ -1334,7 +1455,7 @@ table.data-table th {
   border-radius: var(--radius-inner);
   padding: 14px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
 .shelter-select-btn:hover {
