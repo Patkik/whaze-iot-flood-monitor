@@ -128,9 +128,64 @@
     fill-opacity: 0.12;
   }
 }
+.hazard-buffer {
+  animation: hazard-pulse 3s ease-in-out infinite;
+}
+@keyframes hazard-pulse {
+  0%, 100% {
+    stroke-opacity: 0.85;
+    fill-opacity: 0.04;
+  }
+  50% {
+    stroke-opacity: 0.45;
+    fill-opacity: 0.10;
+  }
+}
+.flood-center-pin {
+  position: relative;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.flood-pulse {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--c, #dc2626);
+  opacity: 0.25;
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.flood-label {
+  position: relative;
+  z-index: 2;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+  border: 1px solid var(--c, #dc2626);
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
 @media (prefers-reduced-motion: reduce) {
   .route-flow,
   .hazard-zone,
+  .hazard-buffer,
+  .flood-pulse,
   .animate-wave-slow,
   .animate-wave-fast,
   .animate-water-float,

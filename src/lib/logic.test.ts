@@ -33,3 +33,22 @@ describe('meanAndSD', () => {
     expect(r.sd).toBeCloseTo(2.138, 3);
   });
 });
+
+describe('Flood Zone and Route Avoidance', () => {
+  it('scales flood radius according to water level', async () => {
+    const { getFloodZone } = await import('./geo');
+    expect(getFloodZone(10).radius).toBe(85);
+    expect(getFloodZone(20).radius).toBe(115);
+    expect(getFloodZone(35).radius).toBe(150);
+  });
+
+  it('guarantees all default shelter routes maintain safe clearance outside the flood radius', async () => {
+    const { SHELTERS, COORDS, minDistanceToPath, getFloodZone } = await import('./geo');
+    const criticalFlood = getFloodZone(35); // 150m radius
+    for (const s of SHELTERS) {
+      const clearance = minDistanceToPath(COORDS.hazard, s.path);
+      expect(clearance).toBeGreaterThan(criticalFlood.radius);
+    }
+  });
+});
+

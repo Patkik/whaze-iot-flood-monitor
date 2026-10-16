@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { COORDS, type LatLng } from '../lib/geo';
+import { COORDS, getFloodZone, type LatLng } from '../lib/geo';
 import type { Level } from '../lib/logic';
 
 const LEVEL_COLOR: Record<Level, string> = { SAFE: '#16a34a', WARNING: '#d97706', CRITICAL: '#dc2626' };
@@ -14,7 +14,19 @@ function pin(color: string, label: string) {
   });
 }
 
-interface LayerProps {
+function floodIcon(level: Level, radius: number) {
+  const color = LEVEL_COLOR[level];
+  return L.divIcon({
+    className: '',
+    iconSize: [0, 0],
+    html: `<div class="flood-center-pin" style="--c:${color};">
+      <div class="flood-pulse"></div>
+      <span class="flood-label">Creek Flood Basin (${radius}m)</span>
+    </div>`,
+  });
+}
+
+export interface RouteMapProps {
   path: LatLng[];
   color: string;
   origin: LatLng;
@@ -23,11 +35,14 @@ interface LayerProps {
   destLabel: string;
   level: Level;
   waterCm: number;
+  minClearance: number;
+  isDetour: boolean;
+  isInsideFlood: boolean;
   onPick: (p: LatLng) => void;
 }
 
-/** Imperative Leaflet layers: markers, hazard zone, animated route and a gliding beacon. */
-function Layers(p: LayerProps) {
+/** Imperative Leaflet layers: markers, dynamic flood radius & safety buffer, animated route and glider. */
+function Layers(p: RouteMapProps) {
   const map = useMap();
   const group = useRef<L.LayerGroup>(L.layerGroup());
   const raf = useRef(0);
@@ -54,27 +69,61 @@ function Layers(p: LayerProps) {
     g.clearLayers();
     cancelAnimationFrame(raf.current);
 
-    L.circle(COORDS.hazard, {
-      radius: 110,
+    const flood = getFloodZone(p.waterCm);
+
+    // 1. Inundated core flood basin (Radius scales with water level: 85m -> 115m -> 150m)
+    L.circle(flood.center, {
+      radius: flood.radius,
       color: LEVEL_COLOR[p.level],
-      weight: 1.5,
+      weight: 2,
       fillColor: LEVEL_COLOR[p.level],
-      fillOpacity: 0.22,
+      fillOpacity: p.level === 'CRITICAL' ? 0.35 : 0.22,
       className: 'hazard-zone',
     })
-      .bindPopup(`Low-lying creek basin. Depth now ${p.waterCm.toFixed(1)} cm. Routes avoid this area.`)
+      .bindPopup(
+        `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
+          <strong>${flood.levelLabel}</strong><br/>
+          Inundation radius: <b>${flood.radius} m</b><br/>
+          Current water depth: <b>${p.waterCm.toFixed(1)} cm</b><br/>
+          <span style="color:#15803d;font-weight:600;">✓ Evacuation corridors strictly bypass this radius.</span>
+        </div>`,
+      )
       .addTo(g);
 
+    // 2. Safety avoidance perimeter ring (No evacuation corridor crosses this ring)
+    L.circle(flood.center, {
+      radius: flood.avoidRadius,
+      color: LEVEL_COLOR[p.level],
+      weight: 1.5,
+      dashArray: '6, 6',
+      fillColor: LEVEL_COLOR[p.level],
+      fillOpacity: 0.06,
+      className: 'hazard-buffer',
+    })
+      .bindPopup(
+        `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
+          <strong>Safe Avoidance Perimeter</strong><br/>
+          Boundary: <b>${flood.avoidRadius} m</b> (${flood.avoidRadius - flood.radius}m safety clearance buffer).<br/>
+          All active routes route along elevated ground outside this line.
+        </div>`,
+      )
+      .addTo(g);
+
+    // Center pulse beacon in the flood basin
+    L.marker(flood.center, { icon: floodIcon(p.level, flood.radius) }).addTo(g);
+
+    // Shelters and Origin markers
     L.marker(COORDS.fcpc, { icon: pin('#16a34a', 'FCPC') }).addTo(g);
     L.marker(COORDS.narra, { icon: pin('#1d4ed8', 'Narra Court') }).addTo(g);
     L.marker(COORDS.yakal, { icon: pin('#1d4ed8', 'Yakal Center') }).addTo(g);
     L.marker(p.origin, { icon: pin(LEVEL_COLOR[p.level], `${p.originLabel}`) }).addTo(g);
 
+    // 3. Evacuation route layers (casing, base line, animated flow)
     L.polyline(p.path, { color: p.color, weight: 11, opacity: 0.18, lineCap: 'round', lineJoin: 'round' }).addTo(g);
     L.polyline(p.path, { color: '#fff', weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }).addTo(g);
     L.polyline(p.path, { color: p.color, weight: 4, opacity: 1, className: 'route-flow', lineCap: 'butt' }).addTo(g);
 
-    // Beacon travelling along the real street geometry at constant speed.
+    // 4. Gliding beacon travelling smoothly along street vertices
     const seg: number[] = [];
     let total = 0;
     for (let i = 0; i < p.path.length - 1; i++) {
@@ -85,7 +134,11 @@ function Layers(p: LayerProps) {
     if (total > 0) {
       const glider = L.marker(p.path[0], {
         interactive: false,
-        icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div class="glider" style="background:${p.color};color:${p.color}"></div>` }),
+        icon: L.divIcon({
+          className: '',
+          iconSize: [0, 0],
+          html: `<div class="glider" style="background:${p.color};color:${p.color}"></div>`,
+        }),
       }).addTo(g);
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const dur = 4500;
@@ -110,18 +163,56 @@ function Layers(p: LayerProps) {
       raf.current = requestAnimationFrame(step);
     }
 
-    map.fitBounds(L.latLngBounds(p.path), { padding: [40, 40], maxZoom: 18 });
+    // Include both the path and the flood zone in bounds so user sees the safe separation
+    const bounds = L.latLngBounds(p.path);
+    bounds.extend(flood.center);
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
     return () => cancelAnimationFrame(raf.current);
   }, [map, p.path, p.color, p.origin, p.originLabel, p.level, p.waterCm]);
 
   return null;
 }
 
-export default function RouteMap(props: LayerProps) {
+export default function RouteMap(props: RouteMapProps) {
+  const flood = getFloodZone(props.waterCm);
+
   return (
-    <MapContainer center={[14.8095, 121.0598]} zoom={16} className="h-full w-full rounded-lg" scrollWheelZoom={false}>
-      <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
-      <Layers {...props} />
-    </MapContainer>
+    <div className="relative h-full w-full">
+      <MapContainer
+        center={[14.8095, 121.0598]}
+        zoom={16}
+        className="h-full w-full rounded-lg"
+        scrollWheelZoom={false}
+      >
+        <TileLayer
+          attribution="&copy; OpenStreetMap contributors"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
+        />
+        <Layers {...props} />
+      </MapContainer>
+
+      {/* Live Safety Clearance Map Overlay Badge */}
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] max-w-[calc(100%-24px)]">
+        {props.isInsideFlood ? (
+          <div className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-950/90 px-3 py-1.5 text-xs font-semibold text-red-200 shadow-lg backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-red-400 animate-ping" />
+            <span>Origin within flood basin ({flood.radius}m). Evacuate outward to safe high ground.</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-card/95 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-lg backdrop-blur dark:text-emerald-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span>
+              Route avoids flood radius ({flood.radius}m) · Clearance: <b>{props.minClearance}m</b>
+            </span>
+            {props.isDetour && (
+              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
+                Detour Active
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
