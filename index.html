@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1D4ED8">
+  <meta name="description" content="Whaze: IoT-Based Early Warning System for Enhanced Community Evacuation Preparedness — First City Providential College, CSJDM, Bulacan">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+  <title>Whaze — IoT Flood Early Warning & Evacuation System</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Splash Screen (Auto-skips after first session load) -->
+  <div id="loading-screen">
+    <div class="loading-content">
+      <img src="assets/logo.png" alt="Whaze Logo" class="logo">
+      <h1>Whaze: Community &amp; Evacuation Leading</h1>
+      <p class="tagline">IoT-Based Early Flood Warning • FCPC, CSJDM Bulacan</p>
+      <div class="loading-bar">
+        <div id="loading-progress"></div>
+      </div>
+      <p id="loading-text">Initializing ESP32 Telemetry Interface...</p>
+    </div>
+  </div>
+
+  <!-- Main Home Screen -->
+  <div id="home-screen" class="hidden">
+    <main class="app-container">
+
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <img src="assets/logo.png" alt="Whaze Logo" class="header-logo">
+          <div class="brand-titles">
+            <h1>Whaze Flood EWS</h1>
+            <p class="brand-subtitle">Brgy. Narra &amp; Yakal, Francisco Homes, CSJDM</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div id="connection-mode-pill" class="connection-pill" title="Telemetry Source">
+            <span class="dot"></span>
+            <span id="connection-mode-text">Simulated Mode</span>
+          </div>
+          <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Offline Alert Log">
+            🔔
+            <span id="notif-badge-count" class="badge-count">1</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Responsive 2-Column Dashboard Grid -->
+      <div class="dashboard-grid">
+
+        <!-- Left Column: Live Flood Status Hero + Simulator Controls -->
+        <div>
+          <!-- Flood Status & Hardware Twin Card -->
+          <section id="flood-status-card" class="status-card state-safe" aria-live="polite">
+            <div class="status-top-row">
+              <div>
+                <span class="status-label">ESP32 Node: FCPC-G3 • Ultrasonic Telemetry</span>
+                <h2 id="flood-status-heading">SAFE (STANDBY)</h2>
+                <p id="flood-status-desc" class="status-desc">
+                  Normal Water Level (&lt; 15 cm) — Continuous Ultrasonic Monitoring Active.
+                </p>
+              </div>
+
+              <!-- 3-Tier LED Hardware Indicator Twin -->
+              <div class="led-array" aria-label="Hardware LED Indicators">
+                <div class="led-bulb">
+                  <div id="led-green" class="led-circle active-green"></div>
+                  <span>GRN</span>
+                </div>
+                <div class="led-bulb">
+                  <div id="led-yellow" class="led-circle"></div>
+                  <span>YLW</span>
+                </div>
+                <div class="led-bulb">
+                  <div id="led-red" class="led-circle"></div>
+                  <span>RED</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ultrasonic Water Gauge Bar -->
+            <div class="water-gauge-wrapper">
+              <div class="water-gauge-labels">
+                <span>Water Surface Rise</span>
+                <span class="mono">Warn: 15 cm | Crit: 30 cm | Max: 100 cm</span>
+              </div>
+              <div class="water-gauge-bar">
+                <div id="water-gauge-fill" class="water-gauge-fill"></div>
+              </div>
+            </div>
+
+            <!-- Quantitative Telemetry Strip -->
+            <div class="telemetry-strip">
+              <div class="telemetry-item">
+                <span class="t-label">Water Level</span>
+                <span id="telemetry-water-cm" class="t-value mono">12.0 cm</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="t-label">Sensor Distance</span>
+                <span id="telemetry-dist-cm" class="t-value mono">88.0 cm</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="t-label">Alert Latency</span>
+                <span id="telemetry-latency-ms" class="t-value mono">42 ms</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Interactive Flood Simulator & Hardware Control Card -->
+          <section class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">🎛️ Interactive Flood Level Simulator &amp; Sensor Control</h3>
+                <p class="card-subtitle">Test water-level conditions (Phase G3 Sunga Residence &amp; FCPC Test Rig)</p>
+              </div>
+            </div>
+
+            <div class="preset-btns">
+              <button type="button" class="preset-btn safe" data-water-preset="10" data-float-preset="false">
+                🟢 Low (10 cm)
+              </button>
+              <button type="button" class="preset-btn warn" data-water-preset="22" data-float-preset="false">
+                🟡 Warning (22 cm)
+              </button>
+              <button type="button" class="preset-btn crit" data-water-preset="36" data-float-preset="true">
+                🔴 Critical (36 cm)
+              </button>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <label for="sim-water-slider">Simulated Water Depth (0 – 100 cm)</label>
+                <span id="sim-slider-val-label" class="mono" style="font-weight:800;color:var(--brand-primary);">12.0 cm</span>
+              </div>
+              <input type="range" id="sim-water-slider" min="0" max="100" step="0.5" value="12">
+            </div>
+
+            <div class="hardware-switches">
+              <label class="toggle-label">
+                <input type="checkbox" id="sim-float-switch">
+                <span>Trigger Float Switch Backup (3.25 in)</span>
+              </label>
+
+              <label class="toggle-label">
+                <input type="checkbox" id="sim-buzzer-mute">
+                <span>Mute Piezo Buzzer Audio</span>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right Column: Locale Weather + Quick Access Modules -->
+        <div>
+          <!-- Weather & Locale Status Card -->
+          <section class="weather-card">
+            <div>
+              <span class="weather-label">Locale Weather • City of San Jose del Monte, Bulacan</span>
+              <h3>27°C • Monsoon Watch</h3>
+              <p>Brgy. Narra (FCPC) &amp; Brgy. Yakal (Phase G3) — Moderate Rainfall</p>
+            </div>
+            <div style="font-size:2.2rem;" aria-hidden="true">🌧️</div>
+          </section>
+
+          <h3 class="section-title">Quick Evacuation &amp; Community Actions</h3>
+
+          <!-- Evacuation Routes (Leaflet GIS) -->
+          <a href="evacuation.html" class="menu-card">
+            <div>
+              <h4>🗺️ Evacuation Routes &amp; GIS Map</h4>
+              <p>Interactive Leaflet map to First City Providential College (FCPC) &amp; nearby shelters.</p>
+            </div>
+            <span class="arrow">›</span>
+          </a>
+
+          <!-- Emergency Alert & Hotlines -->
+          <a href="emergency.html" class="menu-card">
+            <div>
+              <h4>🚨 Emergency SOS &amp; Hotlines</h4>
+              <p>Broadcast RA 10639 mobile flood alert, trigger local siren, &amp; call CSJDM DRRMO.</p>
+            </div>
+            <span class="arrow">›</span>
+          </a>
+
+          <!-- Community Feedback -->
+          <a href="feedback.html" class="menu-card">
+            <div>
+              <h4>💬 Community Feedback &amp; Incident Report</h4>
+              <p>Submit RA 10173 protected status updates &amp; view neighborhood flood reports.</p>
+            </div>
+            <span class="arrow">›</span>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Collapsible Panel 1: ESP32 Local Wi-Fi / Web Bluetooth Hardware Link -->
+      <details class="tech-Accordion">
+        <summary>
+          <span>📡 ESP32 Hardware Connection (Local Wi-Fi SoftAP &amp; Web Bluetooth)</span>
+          <span class="mono" style="font-size:0.78rem;color:var(--brand-primary);">Configure Node ▾</span>
+        </summary>
+        <div class="accordion-body">
+          <p style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:12px;">
+            Connect directly to the physical <strong>ESP32 + JSN-SR04T/HC-SR04 Ultrasonic Sensor</strong> prototype over offline Local Wi-Fi (default SoftAP IP <code>192.168.4.1</code>) or Web Bluetooth. If Vercel HTTPS blocks local HTTP, the app automatically self-heals to Simulated/Offline mode.
+          </p>
+          <div class="form-row cols-3" style="align-items:end;">
+            <div>
+              <label for="esp32-ip-input" class="field-label">ESP32 Local IPv4 Address</label>
+              <input type="text" id="esp32-ip-input" class="input-control mono" value="192.168.4.1" placeholder="192.168.4.1">
+            </div>
+            <div>
+              <button type="button" id="esp32-connect-btn" class="btn btn-primary" style="width:100%;">
+                Poll ESP32 HTTP (/data)
+              </button>
+            </div>
+            <div>
+              <button type="button" id="esp32-ble-btn" class="btn btn-secondary" style="width:100%;">
+                Pair via Web Bluetooth
+              </button>
+            </div>
+          </div>
+          <p id="esp32-conn-feedback" style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">
+            Ready. Using interactive simulator or local cached telemetry when offline.
+          </p>
+        </div>
+      </details>
+
+      <!-- Collapsible Panel 2: SOP 2 & SOP 3 Sensor Trials & Statistical Treatment Logger -->
+      <details class="tech-Accordion" open>
+        <summary>
+          <span>📊 Sensor Trials, Calibration &amp; Statistical Logger (Chapter 3: SOP 2 &amp; SOP 3)</span>
+          <span class="mono" style="font-size:0.78rem;color:var(--brand-primary);">Mean (x̄) &amp; SD ▾</span>
+        </summary>
+        <div class="accordion-body">
+          <p style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:14px;">
+            Evaluates the flood alarm device’s <strong>accuracy</strong>, <strong>reliability</strong>, and <strong>consistency</strong> across repeated trials under Low, Moderate, and Critical water-level conditions using Mean ($\bar{x}$) and Standard Deviation ($SD$).
+          </p>
+
+          <!-- Statistical Summary Boxes -->
+          <div class="stats-summary-grid">
+            <div class="stat-box">
+              <div class="s-title">SOP 2: Overall Sensor Accuracy</div>
+              <div id="stat-overall-acc" class="s-main mono">98.97%</div>
+              <div id="stat-overall-acc-sd" class="s-sub mono">SD = ±0.35% (n = 9 trials)</div>
+            </div>
+            <div class="stat-box">
+              <div class="s-title">SOP 3: Low Condition (&lt;15 cm)</div>
+              <div class="s-main" style="font-size:1rem;color:#15803D;">Green LED Standby</div>
+              <div id="stat-tier-low" class="s-sub mono">x̄ = 10.73 cm | SD = ±1.19 cm</div>
+            </div>
+            <div class="stat-box">
+              <div class="s-title">SOP 3: Moderate (15–29 cm)</div>
+              <div class="s-main" style="font-size:1rem;color:#B45309;">Yellow LED Warning</div>
+              <div id="stat-tier-mod" class="s-sub mono">x̄ = 21.77 cm | SD = ±2.98 cm</div>
+            </div>
+            <div class="stat-box">
+              <div class="s-title">SOP 3: Critical (&ge;30 cm)</div>
+              <div class="s-main" style="font-size:1rem;color:#B91C1C;">Red LED + Buzzer</div>
+              <div id="stat-tier-crit" class="s-sub mono">x̄ = 35.80 cm | SD = ±4.16 cm</div>
+            </div>
+          </div>
+
+          <!-- Record New Trial Form -->
+          <div class="form-row cols-3" style="align-items:end;background:var(--bg-subtle);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);">
+            <div>
+              <label for="trial-actual-cm" class="field-label">Actual Measured Water Level (cm)</label>
+              <input type="number" id="trial-actual-cm" class="input-control mono" step="0.1" min="0" max="100" value="12.0">
+            </div>
+            <div>
+              <label for="trial-sensor-cm" class="field-label">Ultrasonic Sensor Reading (cm)</label>
+              <input type="number" id="trial-sensor-cm" class="input-control mono" step="0.1" min="0" max="100" value="12.1">
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" id="btn-fill-from-sim" class="btn btn-secondary" style="flex:1;">
+                Sync Slider
+              </button>
+              <button type="button" id="btn-log-trial" class="btn btn-primary" style="flex:1;">
+                + Record Trial
+              </button>
+            </div>
+          </div>
+
+          <!-- Trials Data Table -->
+          <div class="table-responsive" style="margin-top:12px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Trial</th>
+                  <th>Water Condition</th>
+                  <th>Actual (cm)</th>
+                  <th>Sensor (cm)</th>
+                  <th>Accuracy (%)</th>
+                  <th>Response Time</th>
+                  <th>Hardware Output</th>
+                </tr>
+              </thead>
+              <tbody id="trials-table-body"></tbody>
+            </table>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap;">
+            <button type="button" id="btn-reset-trials" class="btn btn-secondary">
+              Reset to Baseline Trials
+            </button>
+            <button type="button" id="btn-export-csv" class="btn btn-primary">
+              ⬇️ Export Trials CSV (SPSS / Excel)
+            </button>
+          </div>
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <!-- Offline Notification Center Drawer -->
+  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-label="Offline Flood Alert Log">
+    <div class="drawer-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
+        <div>
+          <h3 style="font-size:1.05rem;font-weight:800;">🔔 Offline Flood Alert Log</h3>
+          <p style="font-size:0.75rem;color:var(--text-muted);">Stored locally on device (accessible without internet)</p>
+        </div>
+        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Alert Drawer">✕</button>
+      </div>
+
+      <div id="notif-drawer-list" class="notif-list"></div>
+
+      <div style="padding-top:12px;border-top:1px solid var(--border-subtle);display:flex;justify-content:space-between;gap:8px;">
+        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Log</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified Bottom Navigation Bar -->
+  <nav class="bottom-nav" aria-label="Primary Navigation">
+    <div class="bottom-nav-inner">
+      <a href="index.html" class="nav-item active" aria-current="page">
+        <span class="nav-icon">🏠</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="evacuation.html" class="nav-item">
+        <span class="nav-icon">🗺️</span>
+        <span>Evac Map</span>
+      </a>
+      <a href="emergency.html" class="nav-item">
+        <span class="nav-icon">🚨</span>
+        <span>Emergency</span>
+      </a>
+      <a href="feedback.html" class="nav-item">
+        <span class="nav-icon">💬</span>
+        <span>Feedback</span>
+      </a>
+    </div>
+  </nav>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,42 @@
+{
+  "name": "Whaze: Community and Evacuation Leading",
+  "short_name": "Whaze EWS",
+  "description": "IoT-Based Early Warning System for Enhanced Community Evacuation Preparedness — First City Providential College, Brgy. Narra & Brgy. Yakal, CSJDM, Bulacan",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F172A",
+  "theme_color": "#2563EB",
+  "categories": ["utilities", "navigation", "weather", "medical"],
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Evacuation Map (FCPC)",
+      "short_name": "Evac Map",
+      "description": "View safe evacuation route to First City Providential College",
+      "url": "/evacuation.html",
+      "icons": [{ "src": "assets/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Emergency SOS Alert",
+      "short_name": "SOS Alert",
+      "description": "Broadcast emergency flood SOS and view CSJDM hotlines",
+      "url": "/emergency.html",
+      "icons": [{ "src": "assets/logo.png", "sizes": "192x192" }]
+    }
+  ]
+}

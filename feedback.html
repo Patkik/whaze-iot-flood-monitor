@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1D4ED8">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <title>Community Feedback &amp; Evaluation — Whaze Flood EWS</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- RA 10173 Data Privacy Agreement Modal -->
+  <div id="agreementModal" class="drawer-backdrop hidden" style="justify-content:center;align-items:center;padding:16px;" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
+    <div class="card" style="width:100%;max-width:460px;padding:24px;box-shadow:var(--shadow-lg);">
+      <div style="font-size:2rem;text-align:center;margin-bottom:8px;">🛡️</div>
+      <h2 id="privacy-modal-title" style="font-size:1.25rem;font-weight:800;text-align:center;color:var(--text-primary);margin-bottom:10px;">
+        User Data Privacy Agreement (RA 10173)
+      </h2>
+
+      <div style="font-size:0.82rem;color:var(--text-secondary);background:var(--bg-subtle);border:1px solid var(--border-color);padding:14px;border-radius:var(--radius-md);max-height:210px;overflow-y:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:8px;">
+        <p>By using this community reporting module, you consent to provide your <strong>Name, Contact Number, Barangay/Zone, and Incident Report</strong> for disaster coordination.</p>
+        <p>In strict compliance with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, your information is used solely to verify flood incidents, coordinate evacuation support with CSJDM DRRMO &amp; FCPC responders, and evaluate system effectiveness.</p>
+        <p>Per <strong>Republic Act No. 10175 (Cybercrime Prevention Act)</strong> and ethical research guidelines of <strong>First City Providential College</strong>, all records are protected and never shared with unauthorized third parties.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button type="button" id="acceptBtn" class="btn btn-primary" style="width:100%;padding:12px;">
+          ✅ I Accept and Agree (Proceed to Feedback)
+        </button>
+        <button type="button" id="declineBtn" class="btn btn-secondary" style="width:100%;">
+          Decline
+        </button>
+      </div>
+      <p id="modalStatus" class="hidden" style="font-size:0.78rem;color:#DC2626;font-weight:700;text-align:center;margin-top:10px;">
+        ⚠️ You must accept the RA 10173 Data Privacy terms to submit personal contact information.
+      </p>
+    </div>
+  </div>
+
+  <main class="app-container">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <a href="index.html" class="icon-btn" aria-label="Back to Dashboard" style="text-decoration:none;">←</a>
+        <img src="assets/logo.png" alt="Whaze Logo" class="header-logo">
+        <div class="brand-titles">
+          <h1>Community Feedback &amp; Reports</h1>
+          <p class="brand-subtitle">Incident Reporting &amp; SOP 4 System Evaluation</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div id="connection-mode-pill" class="connection-pill">
+          <span class="dot"></span>
+          <span id="connection-mode-text">Simulated Mode</span>
+        </div>
+        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Offline Alert Log">
+          🔔
+          <span id="notif-badge-count" class="badge-count">1</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- Left Column: Community Feedback & Incident Form -->
+      <div>
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">💭 Submit Flood Status or System Feedback</h2>
+              <p class="card-subtitle">Share street-level flood conditions or evaluate the Whaze EWS prototype</p>
+            </div>
+            <button type="button" id="reopenPrivacyBtn" class="btn btn-secondary" style="padding:5px 10px;font-size:0.74rem;">
+              🛡️ RA 10173 Policy
+            </button>
+          </div>
+
+          <form id="feedbackForm">
+            <div class="form-row cols-2">
+              <div>
+                <label for="name" class="field-label">Full Name</label>
+                <input type="text" id="name" class="input-control" required placeholder="e.g., Juan Dela Cruz">
+              </div>
+              <div>
+                <label for="phone" class="field-label">Phone Number</label>
+                <input type="tel" id="phone" class="input-control mono" required placeholder="09XXXXXXXXX">
+              </div>
+            </div>
+
+            <div class="form-row cols-2">
+              <div>
+                <label for="contact" class="field-label">Email or Social Handle</label>
+                <input type="text" id="contact" class="input-control" required placeholder="@username or email@fcpc.edu.ph">
+              </div>
+              <div>
+                <label for="address" class="field-label">Address / Barangay</label>
+                <input type="text" id="address" class="input-control" required value="Brgy. Narra, Francisco Homes, CSJDM" placeholder="e.g., Brgy. Narra, CSJDM, Bulacan">
+              </div>
+            </div>
+
+            <div class="form-row cols-2">
+              <div>
+                <label for="reportType" class="field-label">Report Category</label>
+                <select id="reportType" class="input-control">
+                  <option value="Flood Condition Update">🌊 Street / Creek Flood Condition Update</option>
+                  <option value="Evacuation Route Status">🛣️ Evacuation Route Clearance Status</option>
+                  <option value="SOP 4 System Evaluation">⭐ SOP 4 Prototype Evaluation (FCPC Respondent)</option>
+                </select>
+              </div>
+              <div>
+                <label for="rating" class="field-label">EWS Effectiveness Rating (SOP 4)</label>
+                <select id="rating" class="input-control">
+                  <option value="5">⭐⭐⭐⭐⭐ (5.0 - Highly Effective)</option>
+                  <option value="4">⭐⭐⭐⭐ (4.0 - Effective)</option>
+                  <option value="3">⭐⭐⭐ (3.0 - Moderately Effective)</option>
+                  <option value="2">⭐⭐ (2.0 - Needs Improvement)</option>
+                  <option value="1">⭐ (1.0 - Ineffective)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <label for="message" class="field-label">Your Situation, Observation, or Feedback Message</label>
+              <textarea id="message" rows="4" class="input-control" required placeholder="Describe water depth on your street, route accessibility to FCPC, or feedback on the flood alarm speed..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;">
+              📤 Submit Community Feedback
+            </button>
+          </form>
+
+          <p id="status" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--safe-soft);color:#14532D;font-size:0.84rem;font-weight:700;text-align:center;"></p>
+        </section>
+      </div>
+
+      <!-- Right Column: SOP 4 Respondent Weighted Mean & Community Feed -->
+      <div>
+        <!-- SOP 4 Summary Card -->
+        <section class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">📈 SOP 4: Overall System Performance Assessment</h3>
+              <p class="card-subtitle">Weighted Mean &amp; SD based on FCPC respondent evaluations (Chapter 3)</p>
+            </div>
+          </div>
+
+          <div class="stats-summary-grid" style="margin-bottom:0;">
+            <div class="stat-box">
+              <div class="s-title">Weighted Mean Score</div>
+              <div id="sop4-weighted-mean" class="s-main mono" style="color:#15803D;">4.83 / 5.00</div>
+              <div class="s-sub">Verbal Interpretation: <strong>Highly Effective</strong></div>
+            </div>
+            <div class="stat-box">
+              <div class="s-title">Assessment Consistency</div>
+              <div id="sop4-sd" class="s-main mono">SD = ±0.41</div>
+              <div id="sop4-count" class="s-sub mono">n = 6 FCPC Respondents</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Live Community Reports Feed -->
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">📣 Recent Community &amp; Respondent Reports</h3>
+              <p class="card-subtitle">Verified reports from Brgy. Narra &amp; Brgy. Yakal residents</p>
+            </div>
+          </div>
+
+          <div id="community-feed-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Offline Notification Center Drawer -->
+  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-label="Offline Flood Alert Log">
+    <div class="drawer-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
+        <div>
+          <h3 style="font-size:1.05rem;font-weight:800;">🔔 Offline Flood Alert Log</h3>
+          <p style="font-size:0.75rem;color:var(--text-muted);">Stored locally on device</p>
+        </div>
+        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Alert Drawer">✕</button>
+      </div>
+      <div id="notif-drawer-list" class="notif-list"></div>
+      <div style="padding-top:12px;border-top:1px solid var(--border-subtle);">
+        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Log</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified Bottom Navigation Bar -->
+  <nav class="bottom-nav" aria-label="Primary Navigation">
+    <div class="bottom-nav-inner">
+      <a href="index.html" class="nav-item">
+        <span class="nav-icon">🏠</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="evacuation.html" class="nav-item">
+        <span class="nav-icon">🗺️</span>
+        <span>Evac Map</span>
+      </a>
+      <a href="emergency.html" class="nav-item">
+        <span class="nav-icon">🚨</span>
+        <span>Emergency</span>
+      </a>
+      <a href="feedback.html" class="nav-item active" aria-current="page">
+        <span class="nav-icon">💬</span>
+        <span>Feedback</span>
+      </a>
+    </div>
+  </nav>
+
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const agreementModal = document.getElementById('agreementModal');
+      const acceptBtn = document.getElementById('acceptBtn');
+      const declineBtn = document.getElementById('declineBtn');
+      const reopenPrivacyBtn = document.getElementById('reopenPrivacyBtn');
+      const modalStatus = document.getElementById('modalStatus');
+      const form = document.getElementById('feedbackForm');
+      const statusBanner = document.getElementById('status');
+      const feedList = document.getElementById('community-feed-list');
+
+      const SEED_REPORTS = [
+        {
+          id: 'R-01',
+          name: 'Faith Margarette G. Sunga',
+          address: 'Phase G3, Francisco Homes 1, Brgy. Yakal',
+          category: 'SOP 4 System Evaluation',
+          rating: 5,
+          message: 'ESP32 ultrasonic sensor and piezo alarm triggered accurately during controlled water-level rise tests. Mobile alerts appeared immediately offline.',
+          time: 'Today, 08:40 AM'
+        },
+        {
+          id: 'R-02',
+          name: 'Chlowie Reign G. Cabeliza',
+          address: 'Brgy. Narra, Francisco Homes (FCPC)',
+          category: 'Evacuation Route Status',
+          rating: 5,
+          message: 'D. Silang St. and Francisco Ave. corridor to First City Providential College is clear and passable for pedestrian evacuation.',
+          time: 'Today, 08:35 AM'
+        },
+        {
+          id: 'R-03',
+          name: 'Ivan Lindle Herra C. Cenon',
+          address: 'Brgy. Narra, CSJDM, Bulacan',
+          category: 'SOP 4 System Evaluation',
+          rating: 5,
+          message: 'Green, Yellow, and Red LED indicators match the mobile dashboard water depth readings with consistent sub-50ms response time.',
+          time: 'Today, 08:28 AM'
+        },
+        {
+          id: 'R-04',
+          name: 'Daveaidan T. Llave',
+          address: 'Francisco Homes, CSJDM, Bulacan',
+          category: 'SOP 4 System Evaluation',
+          rating: 5,
+          message: 'Leaflet GIS map clearly pinpoints FCPC and secondary barangay shelters even when internet drops.',
+          time: 'Today, 08:22 AM'
+        },
+        {
+          id: 'R-05',
+          name: 'Mary Jhanet N. Magsipoc',
+          address: 'Brgy. Narra, Francisco Homes, CSJDM',
+          category: 'SOP 4 System Evaluation',
+          rating: 4,
+          message: 'Very helpful early warning tool for residents near low-lying waterways. Clear evacuation checklist.',
+          time: 'Today, 08:18 AM'
+        },
+        {
+          id: 'R-06',
+          name: 'Kervin Ray A. Moncatar',
+          address: 'Brgy. Yakal, Francisco Homes 1, CSJDM',
+          category: 'Flood Condition Update',
+          rating: 5,
+          message: 'Water channel at Phase G3 currently at 12.0 cm (Safe standby level). Sensor enclosure IP65 seal verified intact.',
+          time: 'Today, 08:12 AM'
+        }
+      ];
+
+      // Show privacy modal only if not yet accepted
+      const isAccepted = localStorage.getItem(STORAGE_KEYS.PRIVACY_ACCEPTED) === 'true';
+      if (!isAccepted && agreementModal) {
+        agreementModal.classList.remove('hidden');
+      }
+
+      if (acceptBtn) {
+        acceptBtn.addEventListener('click', () => {
+          localStorage.setItem(STORAGE_KEYS.PRIVACY_ACCEPTED, 'true');
+          agreementModal.classList.add('hidden');
+          modalStatus.classList.add('hidden');
+        });
+      }
+
+      if (declineBtn) {
+        declineBtn.addEventListener('click', () => {
+          modalStatus.classList.remove('hidden');
+        });
+      }
+
+      if (reopenPrivacyBtn) {
+        reopenPrivacyBtn.addEventListener('click', () => {
+          modalStatus.classList.add('hidden');
+          agreementModal.classList.remove('hidden');
+        });
+      }
+
+      // Escape key closes modal if already accepted
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && localStorage.getItem(STORAGE_KEYS.PRIVACY_ACCEPTED) === 'true') {
+          agreementModal.classList.add('hidden');
+        }
+      });
+
+      function loadReports() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.FEEDBACK);
+          if (!raw) {
+            localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(SEED_REPORTS));
+            return [...SEED_REPORTS];
+          }
+          return JSON.parse(raw);
+        } catch (e) {
+          return [...SEED_REPORTS];
+        }
+      }
+
+      function renderFeedAndSop4() {
+        const reports = loadReports();
+        const ratings = reports.map((r) => Number(r.rating || 5));
+        const stats = computeMeanAndSD(ratings);
+
+        const meanEl = document.getElementById('sop4-weighted-mean');
+        const sdEl = document.getElementById('sop4-sd');
+        const countEl = document.getElementById('sop4-count');
+
+        if (meanEl) meanEl.textContent = `${stats.mean.toFixed(2)} / 5.00`;
+        if (sdEl) sdEl.textContent = `SD = ±${stats.sd.toFixed(2)}`;
+        if (countEl) countEl.textContent = `n = ${stats.count} Respondent Reports`;
+
+        if (feedList) {
+          feedList.innerHTML = reports
+            .map(
+              (r) => `
+              <div style="padding:12px;border-radius:var(--radius-md);background:var(--bg-subtle);border:1px solid var(--border-subtle);">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <strong style="font-size:0.86rem;color:var(--text-primary);">${r.name}</strong>
+                  <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">${r.time}</span>
+                </div>
+                <div style="font-size:0.75rem;color:var(--brand-primary);font-weight:700;margin-top:2px;">
+                  📍 ${r.address} • ${r.category} • ${'⭐'.repeat(Number(r.rating || 5))}
+                </div>
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">
+                  ${r.message}
+                </p>
+              </div>
+            `
+            )
+            .join('');
+        }
+      }
+
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          if (localStorage.getItem(STORAGE_KEYS.PRIVACY_ACCEPTED) !== 'true') {
+            agreementModal.classList.remove('hidden');
+            return;
+          }
+
+          const reports = loadReports();
+          const newReport = {
+            id: 'R-' + Date.now().toString().slice(-4),
+            name: document.getElementById('name').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            category: document.getElementById('reportType').value,
+            rating: Number(document.getElementById('rating').value || 5),
+            message: document.getElementById('message').value.trim(),
+            time: 'Just now (' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ')'
+          };
+
+          reports.unshift(newReport);
+          localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(reports.slice(0, 25)));
+
+          pushNotification(
+            'SAFE',
+            `💬 Community Report Submitted (${newReport.name})`,
+            `${newReport.category}: "${newReport.message.slice(0, 70)}..."`,
+            loadState().waterLevelCm
+          );
+
+          renderFeedAndSop4();
+          if (statusBanner) {
+            statusBanner.textContent = '✅ Feedback & incident report saved and added to the community feed!';
+            statusBanner.classList.remove('hidden');
+          }
+          document.getElementById('message').value = '';
+        });
+      }
+
+      renderFeedAndSop4();
+    });
+  </script>
+</body>
+
+</html>
