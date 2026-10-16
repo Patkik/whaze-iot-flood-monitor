@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-line: #e4e7ec;
+  --color-ink: #101828;
+  --color-muted: #475467;
+  --color-faint: #667085;
+
+  --color-brand: #1d4ed8;
+  --color-brand-dark: #1e40af;
+  --color-brand-tint: #eff4ff;
+
+  --color-safe: #067647;
+  --color-safe-tint: #ecfdf3;
+  --color-warn: #93370d;
+  --color-warn-tint: #fffaeb;
+  --color-crit: #b42318;
+  --color-crit-tint: #fef3f2;
+
+  --radius-card: 12px;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-[12px] border border-line bg-surface p-4 sm:p-5;
+  }
+  .btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent bg-brand px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent bg-crit px-4 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-50;
+  }
+  .btn-quiet {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-ink transition-colors hover:bg-bg disabled:opacity-50;
+  }
+  .field {
+    @apply min-h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-faint;
+  }
+  textarea.field {
+    @apply py-2;
+  }
+  .label {
+    @apply mb-1 block text-xs font-semibold text-muted;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold tracking-wide text-faint uppercase;
+  }
+}
+
+/* Leaflet */
+.leaflet-container {
+  font-family: var(--font-sans);
+  z-index: 0;
+}
+.pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  background: #fff;
+  padding: 3px 10px 3px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #101828;
+  box-shadow: 0 1px 3px rgb(16 24 40 / 0.18);
+}
+.pin i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: block;
+}
+.route-flow {
+  stroke-dasharray: 10 12;
+  animation: route-flow 1.1s linear infinite;
+}
+@keyframes route-flow {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+.glider {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px currentColor, 0 1px 4px rgb(0 0 0 / 0.3);
+  transform: translate(-50%, -50%);
+}
+.hazard-zone {
+  animation: hazard 2.6s ease-in-out infinite;
+}
+@keyframes hazard {
+  50% {
+    fill-opacity: 0.12;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-flow,
+  .hazard-zone {
+    animation: none;
+  }
+}
