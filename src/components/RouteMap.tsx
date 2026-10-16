@@ -14,7 +14,16 @@ function pin(color: string, label: string) {
   });
 }
 
-function floodIcon(level: Level, radius: number) {
+function floodIcon(level: Level, radius: number, isWarningOrHigher: boolean) {
+  if (!isWarningOrHigher) {
+    return L.divIcon({
+      className: '',
+      iconSize: [0, 0],
+      html: `<div class="flood-center-pin" style="--c:#0284c7;">
+        <span class="flood-label" style="background:#0284c7;color:#fff;">Creek Bed (Normal &lt;15cm)</span>
+      </div>`,
+    });
+  }
   const color = LEVEL_COLOR[level];
   return L.divIcon({
     className: '',
@@ -71,46 +80,67 @@ function Layers(p: RouteMapProps) {
 
     const flood = getFloodZone(p.waterCm);
 
-    // 1. Inundated core flood basin (Radius scales with water level: 85m -> 115m -> 150m)
-    L.circle(flood.center, {
-      radius: flood.radius,
-      color: LEVEL_COLOR[p.level],
-      weight: 2,
-      fillColor: LEVEL_COLOR[p.level],
-      fillOpacity: p.level === 'CRITICAL' ? 0.35 : 0.22,
-      className: 'hazard-zone',
-    })
-      .bindPopup(
-        `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
-          <strong>${flood.levelLabel}</strong><br/>
-          Inundation radius: <b>${flood.radius} m</b><br/>
-          Current water depth: <b>${p.waterCm.toFixed(1)} cm</b><br/>
-          <span style="color:#15803d;font-weight:600;">✓ Evacuation corridors strictly bypass this radius.</span>
-        </div>`,
-      )
-      .addTo(g);
+    if (flood.isWarningOrHigher) {
+      // 1. Inundated core flood basin (Radius scales with water level: 115m Warning -> 150m Critical)
+      L.circle(flood.center, {
+        radius: flood.radius,
+        color: LEVEL_COLOR[p.level],
+        weight: 2,
+        fillColor: LEVEL_COLOR[p.level],
+        fillOpacity: p.level === 'CRITICAL' ? 0.35 : 0.22,
+        className: 'hazard-zone',
+      })
+        .bindPopup(
+          `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
+            <strong>${flood.levelLabel}</strong><br/>
+            Inundation radius: <b>${flood.radius} m</b><br/>
+            Current water depth: <b>${p.waterCm.toFixed(1)} cm</b><br/>
+            <span style="color:#15803d;font-weight:600;">✓ Evacuation corridors strictly bypass this radius.</span>
+          </div>`,
+        )
+        .addTo(g);
 
-    // 2. Safety avoidance perimeter ring (No evacuation corridor crosses this ring)
-    L.circle(flood.center, {
-      radius: flood.avoidRadius,
-      color: LEVEL_COLOR[p.level],
-      weight: 1.5,
-      dashArray: '6, 6',
-      fillColor: LEVEL_COLOR[p.level],
-      fillOpacity: 0.06,
-      className: 'hazard-buffer',
-    })
-      .bindPopup(
-        `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
-          <strong>Safe Avoidance Perimeter</strong><br/>
-          Boundary: <b>${flood.avoidRadius} m</b> (${flood.avoidRadius - flood.radius}m safety clearance buffer).<br/>
-          All active routes route along elevated ground outside this line.
-        </div>`,
-      )
-      .addTo(g);
+      // 2. Safety avoidance perimeter ring (No evacuation corridor crosses this ring)
+      L.circle(flood.center, {
+        radius: flood.avoidRadius,
+        color: LEVEL_COLOR[p.level],
+        weight: 1.5,
+        dashArray: '6, 6',
+        fillColor: LEVEL_COLOR[p.level],
+        fillOpacity: 0.06,
+        className: 'hazard-buffer',
+      })
+        .bindPopup(
+          `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
+            <strong>Safe Avoidance Perimeter</strong><br/>
+            Boundary: <b>${flood.avoidRadius} m</b> (${flood.avoidRadius - flood.radius}m safety clearance buffer).<br/>
+            All active routes route along elevated ground outside this line.
+          </div>`,
+        )
+        .addTo(g);
+    } else {
+      // Normal stream channel (dormant / non-flooded, safe to traverse)
+      L.circle(flood.center, {
+        radius: 65,
+        color: '#0284c7',
+        weight: 1.5,
+        dashArray: '4, 4',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.08,
+        className: 'normal-stream-zone',
+      })
+        .bindPopup(
+          `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
+            <strong>Creek Channel (Normal Level)</strong><br/>
+            Current water depth: <b>${p.waterCm.toFixed(1)} cm</b> (&lt; 15 cm Safe)<br/>
+            <span style="color:#0284c7;">Direct shortest street paths active. Flood radius avoidance engages automatically at Warning levels (≥ 15 cm).</span>
+          </div>`,
+        )
+        .addTo(g);
+    }
 
     // Center pulse beacon in the flood basin
-    L.marker(flood.center, { icon: floodIcon(p.level, flood.radius) }).addTo(g);
+    L.marker(flood.center, { icon: floodIcon(p.level, flood.radius, flood.isWarningOrHigher) }).addTo(g);
 
     // Shelters and Origin markers
     L.marker(COORDS.fcpc, { icon: pin('#16a34a', 'FCPC') }).addTo(g);
@@ -199,17 +229,24 @@ export default function RouteMap(props: RouteMapProps) {
             <span className="h-2 w-2 rounded-full bg-red-400 animate-ping" />
             <span>Origin within flood basin ({flood.radius}m). Evacuate outward to safe high ground.</span>
           </div>
+        ) : flood.isWarningOrHigher ? (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-card/95 px-3 py-1.5 text-xs font-semibold text-amber-800 shadow-lg backdrop-blur dark:text-amber-300">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            <span>
+              Warning active: Bypassing {flood.radius}m flood radius · Clearance: <b>{props.minClearance}m</b>
+            </span>
+            {props.isDetour && (
+              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-amber-900/60 dark:text-amber-300">
+                Bypass Active
+              </span>
+            )}
+          </div>
         ) : (
           <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-card/95 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-lg backdrop-blur dark:text-emerald-300">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span>
-              Route avoids flood radius ({flood.radius}m) · Clearance: <b>{props.minClearance}m</b>
+              Normal Water Depth (&lt; 15 cm) · Direct shortest path active (Avoidance on at ≥15 cm)
             </span>
-            {props.isDetour && (
-              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
-                Detour Active
-              </span>
-            )}
           </div>
         )}
       </div>

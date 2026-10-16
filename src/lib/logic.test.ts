@@ -35,18 +35,45 @@ describe('meanAndSD', () => {
 });
 
 describe('Flood Zone and Route Avoidance', () => {
-  it('scales flood radius according to water level', async () => {
+  it('activates flood radius only when reaching warning levels (>= 15 cm or float switch)', async () => {
     const { getFloodZone } = await import('./geo');
-    expect(getFloodZone(10).radius).toBe(85);
-    expect(getFloodZone(20).radius).toBe(115);
-    expect(getFloodZone(35).radius).toBe(150);
+    // Normal water conditions (< 15 cm): Avoidance inactive / standby
+    const safeZone = getFloodZone(10);
+    expect(safeZone.isWarningOrHigher).toBe(false);
+    expect(safeZone.radius).toBe(0);
+    expect(safeZone.avoidRadius).toBe(0);
+
+    // Warning level (>= 15 cm and < 30 cm): 115m radius active
+    const warningZone = getFloodZone(15);
+    expect(warningZone.isWarningOrHigher).toBe(true);
+    expect(warningZone.radius).toBe(115);
+    expect(warningZone.avoidRadius).toBe(135);
+
+    // Critical level (>= 30 cm): 150m radius active
+    const criticalZone = getFloodZone(35);
+    expect(criticalZone.isWarningOrHigher).toBe(true);
+    expect(criticalZone.radius).toBe(150);
+    expect(criticalZone.avoidRadius).toBe(170);
+
+    // Float switch triggered forces critical flood radius
+    const floatZone = getFloodZone(5, true);
+    expect(floatZone.isWarningOrHigher).toBe(true);
+    expect(floatZone.radius).toBe(150);
   });
 
-  it('guarantees all default shelter routes maintain safe clearance outside the flood radius', async () => {
-    const { SHELTERS, COORDS, minDistanceToPath, getFloodZone } = await import('./geo');
+  it('provides direct routes during safe levels and high-ground bypass routes during warning levels', async () => {
+    const { SHELTERS, COORDS, minDistanceToPath, getShelterRoute, getFloodZone } = await import('./geo');
     const criticalFlood = getFloodZone(35); // 150m radius
+
     for (const s of SHELTERS) {
-      const clearance = minDistanceToPath(COORDS.hazard, s.path);
+      // Safe mode: Direct route is available
+      const direct = getShelterRoute(s, false);
+      expect(direct.path.length).toBeGreaterThan(0);
+      expect(direct.distance).toBeDefined();
+
+      // Warning/Critical mode: High-ground bypass route strictly clears the 150m flood zone
+      const avoid = getShelterRoute(s, true);
+      const clearance = minDistanceToPath(COORDS.hazard, avoid.path);
       expect(clearance).toBeGreaterThan(criticalFlood.radius);
     }
   });

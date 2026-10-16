@@ -6,6 +6,7 @@ import {
   SHELTERS,
   fetchFootRoute,
   getFloodZone,
+  getShelterRoute,
   haversineMeters,
   minDistanceToPath,
   type LatLng,
@@ -24,7 +25,8 @@ export default function Evacuate() {
 
   const shelter = SHELTERS.find((s) => s.id === shelterId)!;
   const color = shelter.role === 'Primary' ? '#15803d' : '#1d4ed8';
-  const flood = getFloodZone(t.waterCm);
+  const flood = getFloodZone(t.waterCm, t.floatSwitch);
+  const baseRoute = getShelterRoute(shelter, flood.isWarningOrHigher);
 
   const origin = custom ?? COORDS.node;
   const originLabel = custom ? customLabel : `Node ${t.waterCm.toFixed(1)} cm`;
@@ -32,39 +34,41 @@ export default function Evacuate() {
   // Compute a live street-snapped walk adhering to flood avoidance; fall back to verified dry geometry offline.
   useEffect(() => {
     let cancelled = false;
-    fetchFootRoute(origin, shelter.coords, t.waterCm, avoidFloods)
+    fetchFootRoute(origin, shelter.coords, t.waterCm, avoidFloods, t.floatSwitch)
       .then((r) => {
         if (cancelled) return;
         setLive(r);
         if (r.isInsideFlood) {
-          setNote('Warning: Starting point is within the flood zone. Outward escape corridor generated.');
+          setNote('Warning: Starting point is within the active flood zone. Outward escape corridor generated.');
         } else if (r.isDetour) {
           setNote(`Flood avoidance active: Detoured around the ${flood.radius} m flood radius.`);
-        } else {
+        } else if (flood.isWarningOrHigher) {
           setNote(`Safe route active: Maintains ${r.minClearance} m clearance from flooded creek.`);
+        } else {
+          setNote('Direct shortest route active. Flood avoidance is on standby (< 15 cm normal depth).');
         }
       })
       .catch(() => {
         if (cancelled) return;
         setLive(null);
-        setNote('Offline mode: displaying pre-verified flood-safe corridor.');
+        setNote('Offline mode: displaying pre-verified corridor.');
       });
 
     return () => {
       cancelled = true;
     };
-  }, [origin, shelter, t.waterCm, avoidFloods]);
+  }, [origin, shelter, t.waterCm, avoidFloods, t.floatSwitch, flood.isWarningOrHigher, flood.radius]);
 
-  const path = live?.path ?? shelter.path;
-  const distance = live ? `${live.meters} m` : shelter.distance;
-  const eta = live ? `${live.minutes} min` : shelter.eta;
-  const steps = live?.steps ?? shelter.steps;
+  const path = live?.path ?? baseRoute.path;
+  const distance = live ? `${live.meters} m` : baseRoute.distance;
+  const eta = live ? `${live.minutes} min` : baseRoute.eta;
+  const steps = live?.steps ?? baseRoute.steps;
   const clearance = live
     ? live.minClearance
-    : Math.round(minDistanceToPath(flood.center, shelter.path));
-  const isInsideFlood = live
-    ? live.isInsideFlood
-    : haversineMeters(origin, flood.center) < flood.radius;
+    : Math.round(minDistanceToPath(flood.center, baseRoute.path));
+  const isInsideFlood = flood.isWarningOrHigher
+    ? (live ? live.isInsideFlood : haversineMeters(origin, flood.center) < flood.radius)
+    : false;
   const isDetour = live ? live.isDetour : false;
 
   function locate() {
@@ -88,7 +92,7 @@ export default function Evacuate() {
       <div>
         <h1 className="text-xl font-semibold sm:text-2xl">Evacuation route</h1>
         <p className="text-[13px] text-muted">
-          Shortest walk along real streets, strictly bypassing the flooded creek basin.
+          Shortest walk along real streets, avoiding flood hazard zones when water reaches warning levels.
         </p>
       </div>
 
@@ -134,10 +138,18 @@ export default function Evacuate() {
               <p className="eyebrow">Flood Clearance</p>
               <p
                 className={`tnum truncate text-[15px] font-semibold ${
-                  isInsideFlood ? 'text-danger' : 'text-safe'
+                  isInsideFlood
+                    ? 'text-danger'
+                    : flood.isWarningOrHigher
+                    ? 'text-safe'
+                    : 'text-ink'
                 }`}
               >
-                {isInsideFlood ? 'Inside basin' : `${clearance} m clear`}
+                {isInsideFlood
+                  ? 'Inside basin'
+                  : flood.isWarningOrHigher
+                  ? `${clearance} m clear`
+                  : 'Normal (< 15 cm)'}
               </p>
             </div>
           </div>
@@ -149,7 +161,9 @@ export default function Evacuate() {
             <div className="flex items-center gap-2.5 min-w-0">
               <div
                 className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
-                  avoidFloods
+                  avoidFloods && flood.isWarningOrHigher
+                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                    : avoidFloods
                     ? 'bg-safe-tint text-safe'
                     : 'bg-bg text-muted'
                 }`}
@@ -159,9 +173,11 @@ export default function Evacuate() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate">Avoid Flooded Area Radius</p>
                 <p className="text-xs text-muted truncate">
-                  {avoidFloods
-                    ? `Bypassing ${flood.radius}m ${flood.levelLabel}`
-                    : 'Unconstrained direct path'}
+                  {!avoidFloods
+                    ? 'Avoidance disabled (unconstrained direct path)'
+                    : flood.isWarningOrHigher
+                    ? `ACTIVE (≥ 15 cm): Bypassing ${flood.radius}m ${flood.levelLabel}`
+                    : 'Standby (activates automatically at Warning level ≥ 15 cm)'}
                 </p>
               </div>
             </div>
@@ -185,34 +201,37 @@ export default function Evacuate() {
             }
           >
             <div className="space-y-2" role="radiogroup" aria-label="Choose shelter">
-              {SHELTERS.map((s) => (
-                <button
-                  key={s.id}
-                  role="radio"
-                  aria-checked={s.id === shelterId}
-                  onClick={() => setShelterId(s.id)}
-                  className={`w-full rounded-lg border p-3 text-left ${
-                    s.id === shelterId
-                      ? 'border-brand bg-brand-tint'
-                      : 'border-line hover:bg-bg'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold">{s.name}</span>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        s.role === 'Primary' ? 'bg-safe-tint text-safe' : 'bg-bg text-muted'
-                      }`}
-                    >
-                      {s.role}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[13px] text-muted">{s.note}</p>
-                  <p className="tnum mt-1.5 font-mono text-xs text-faint">
-                    {s.distance} · {s.eta} · {s.occupancy} sheltered
-                  </p>
-                </button>
-              ))}
+              {SHELTERS.map((s) => {
+                const sRoute = getShelterRoute(s, flood.isWarningOrHigher);
+                return (
+                  <button
+                    key={s.id}
+                    role="radio"
+                    aria-checked={s.id === shelterId}
+                    onClick={() => setShelterId(s.id)}
+                    className={`w-full rounded-lg border p-3 text-left ${
+                      s.id === shelterId
+                        ? 'border-brand bg-brand-tint'
+                        : 'border-line hover:bg-bg'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold">{s.name}</span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          s.role === 'Primary' ? 'bg-safe-tint text-safe' : 'bg-bg text-muted'
+                        }`}
+                      >
+                        {s.role}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[13px] text-muted">{s.note}</p>
+                    <p className="tnum mt-1.5 font-mono text-xs text-faint">
+                      {sRoute.distance} · {sRoute.eta} · {s.occupancy} sheltered
+                    </p>
+                  </button>
+                );
+              })}
             </div>
             <p className="mt-3 text-xs text-faint" role="status">
               {note}
@@ -225,8 +244,10 @@ export default function Evacuate() {
               isInsideFlood
                 ? 'Emergency Escape Route'
                 : isDetour
-                  ? 'Flood-Safe Bypass Active'
-                  : `Via ${shelter.via}`
+                ? 'Flood-Safe Bypass Active'
+                : flood.isWarningOrHigher
+                ? `High ground corridor via ${baseRoute.via}`
+                : `Direct shortest path via ${baseRoute.via}`
             }
           >
             {isInsideFlood && (
