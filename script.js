@@ -609,6 +609,57 @@ function renderDashboardTelemetry(state) {
       gaugeFill.style.backgroundColor = '#16A34A';
     }
   }
+
+  // Sync Top Blue Header Search/Telemetry Pill Summary
+  const headerPillSummary = document.getElementById('header-pill-water-summary');
+  if (headerPillSummary) {
+    headerPillSummary.textContent = `Node ESP32-G3 • ${Number(state.waterLevelCm).toFixed(1)} cm (${state.status})`;
+  }
+
+  // Sync 3-Step Horizontal Flood Early Warning Stepper (Reference UI Pattern)
+  const stepSafe = document.getElementById('step-safe');
+  const stepWarn = document.getElementById('step-warn');
+  const stepCrit = document.getElementById('step-crit');
+  const stepLine1 = document.getElementById('step-line-1');
+  const stepLine2 = document.getElementById('step-line-2');
+  const stepperStatusPill = document.getElementById('stepper-status-pill');
+
+  if (stepSafe && stepWarn && stepCrit) {
+    [stepSafe, stepWarn, stepCrit].forEach((el) => {
+      el.classList.remove('active', 'completed', 'warn-active', 'danger-active');
+    });
+    if (stepLine1) stepLine1.classList.remove('completed', 'warn-line', 'danger-line');
+    if (stepLine2) stepLine2.classList.remove('completed', 'warn-line', 'danger-line');
+
+    if (state.status === 'SAFE') {
+      stepSafe.classList.add('active');
+      if (stepperStatusPill) {
+        stepperStatusPill.textContent = 'Stage 1 of 3 • Nominal';
+        stepperStatusPill.style.background = 'var(--status-safe-bg)';
+        stepperStatusPill.style.color = 'var(--status-safe-fg)';
+      }
+    } else if (state.status === 'WARNING') {
+      stepSafe.classList.add('completed');
+      stepWarn.classList.add('warn-active');
+      if (stepLine1) stepLine1.classList.add('warn-line');
+      if (stepperStatusPill) {
+        stepperStatusPill.textContent = 'Stage 2 of 3 • Advisory';
+        stepperStatusPill.style.background = 'var(--status-warn-bg)';
+        stepperStatusPill.style.color = 'var(--status-warn-fg)';
+      }
+    } else {
+      stepSafe.classList.add('completed');
+      stepWarn.classList.add('completed');
+      stepCrit.classList.add('danger-active');
+      if (stepLine1) stepLine1.classList.add('danger-line');
+      if (stepLine2) stepLine2.classList.add('danger-line');
+      if (stepperStatusPill) {
+        stepperStatusPill.textContent = 'Stage 3 of 3 • Evacuate';
+        stepperStatusPill.style.background = 'var(--status-crit-bg)';
+        stepperStatusPill.style.color = 'var(--status-crit-fg)';
+      }
+    }
+  }
 }
 
 // ============================================================================

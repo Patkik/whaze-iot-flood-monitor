@@ -3,15 +3,15 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#09090B">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1E5EFF">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="assets/logo.png">
   <title>Field Reports &amp; SOP 4 Evaluation — Whaze Flood EWS</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -19,10 +19,10 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <!-- RA 10173 Data Privacy Agreement Modal -->
-  <div id="agreementModal" class="drawer-backdrop hidden" style="justify-content:center;align-items:center;padding:16px;" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
-    <div class="card" style="width:100%;max-width:460px;padding:24px;box-shadow:var(--shadow-overlay);">
-      <span class="status-label" style="margin-bottom:8px;">Republic Act No. 10173</span>
-      <h2 id="privacy-modal-title" style="font-size:16px;font-weight:600;letter-spacing:-0.015em;color:var(--foreground);margin-bottom:12px;">
+  <div id="agreementModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
+    <div class="modal-card">
+      <span class="status-badge-inline" style="margin-bottom:8px;">REPUBLIC ACT NO. 10173</span>
+      <h2 id="privacy-modal-title" style="font-size:16px;font-weight:800;letter-spacing:-0.015em;color:var(--foreground);margin-bottom:10px;">
         Data Privacy &amp; Research Consent Notice
       </h2>
 
@@ -40,208 +40,215 @@
           Decline
         </button>
       </div>
-      <p id="modalStatus" class="hidden" style="font-size:12px;color:var(--status-crit-fg);font-weight:500;margin-top:10px;">
+      <p id="modalStatus" class="hidden" style="font-size:12px;color:var(--status-crit-fg);font-weight:600;margin-top:10px;">
         Consent to RA 10173 terms is required before submitting personal contact details.
       </p>
     </div>
   </div>
 
-  <main id="main-content" class="app-container">
-    <!-- Top Header -->
-    <header class="top-header">
-      <div class="header-left">
-        <a href="index.html" class="icon-btn" aria-label="Back to Telemetry">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </a>
-        <img src="assets/logo.png" alt="Whaze Logo" class="header-logo">
-        <div class="brand-titles">
-          <h1>Field Reports &amp; SOP 4 Evaluation</h1>
-          <p class="brand-subtitle">Community Observation Log &amp; Respondent Assessment</p>
-        </div>
-      </div>
+  <div class="app-shell">
+    <!-- Top Royal Blue Hero Header (Matches Reference Sign-Up / Details Sheet Header) -->
+    <header class="blue-hero-header">
+      <div class="blue-header-inner">
+        <div class="blue-header-top">
+          <a href="index.html" class="circle-header-btn" aria-label="Back to Telemetry Monitor">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </a>
 
-      <nav class="desktop-nav" aria-label="Desktop Navigation">
-        <a href="index.html">Telemetry</a>
-        <a href="evacuation.html">Evacuation GIS</a>
-        <a href="emergency.html">SOS &amp; Dispatch</a>
-        <a href="feedback.html" class="active" aria-current="page">Field Reports</a>
-      </nav>
+          <div class="header-center-location">
+            <div class="loc-caption">SOP 4 RESPONDENT &amp; FIELD LOG</div>
+            <div class="loc-title">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span>Community Field Reports</span>
+            </div>
+          </div>
 
-      <div class="header-actions">
-        <div id="connection-mode-pill" class="connection-pill">
-          <span class="dot" aria-hidden="true"></span>
-          <span id="connection-mode-text">Simulated Mode</span>
+          <nav class="desktop-nav" aria-label="Primary Navigation">
+            <a href="index.html">Monitor</a>
+            <a href="evacuation.html">Evacuation Map</a>
+            <a href="emergency.html">SOS &amp; Hotlines</a>
+            <a href="feedback.html" class="active" aria-current="page">Field Reports</a>
+          </nav>
+
+          <button type="button" id="open-notif-drawer-btn" class="circle-header-btn" aria-label="Open Telemetry Alert Log">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+            <span id="notif-badge-count" class="notif-badge hidden">0</span>
+          </button>
         </div>
-        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Event Log">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          <span id="notif-badge-count" class="badge-count">1</span>
-        </button>
+
+        <!-- Embedded White Pill Status Bar -->
+        <div class="header-search-pill">
+          <div class="pill-left">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span class="pill-text">RA 10173 Protected • Brgy. Narra &amp; Yakal</span>
+          </div>
+          <div id="connection-mode-pill" class="conn-pill">
+            <span class="conn-dot"></span>
+            <span id="connection-mode-text">Simulated Mode</span>
+          </div>
+        </div>
       </div>
     </header>
 
-    <div class="dashboard-grid">
-      <!-- Left Pane: Field Observation & Respondent Form -->
-      <div>
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">Submit Field Observation or System Evaluation</h2>
-              <p class="card-subtitle">Log street-level flood conditions or record SOP 4 respondent ratings</p>
-            </div>
-            <button type="button" id="reopenPrivacyBtn" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;min-height:30px;">
-              RA 10173 Notice
-            </button>
+    <!-- Curved White Sheet Body -->
+    <main id="main-content" class="sheet-body">
+      <div class="sheet-container">
+        <div class="dashboard-grid">
+          <!-- Left Pane: Field Observation & Respondent Form -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h1 class="card-title">Submit Field Observation or Evaluation</h1>
+                  <p class="card-subtitle">Log street-level flood conditions or record SOP 4 respondent ratings</p>
+                </div>
+                <button type="button" id="reopenPrivacyBtn" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;min-height:32px;">
+                  RA 10173 Notice
+                </button>
+              </div>
+
+              <form id="feedbackForm">
+                <div class="form-grid" style="margin-bottom:14px;">
+                  <div>
+                    <label for="name" class="field-label">Full Name</label>
+                    <input type="text" id="name" class="text-input" required placeholder="Juan Dela Cruz">
+                  </div>
+                  <div>
+                    <label for="phone" class="field-label">Mobile Number</label>
+                    <input type="tel" id="phone" class="text-input mono tabular-nums" required placeholder="09XXXXXXXXX">
+                  </div>
+                </div>
+
+                <div class="form-grid" style="margin-bottom:14px;">
+                  <div>
+                    <label for="contact" class="field-label">Institutional Email / Handle</label>
+                    <input type="text" id="contact" class="text-input" required placeholder="name@fcpc.edu.ph">
+                  </div>
+                  <div>
+                    <label for="address" class="field-label">Barangay / Sector</label>
+                    <input type="text" id="address" class="text-input" required value="Brgy. Narra, Francisco Homes, CSJDM" placeholder="Brgy. Narra, CSJDM, Bulacan">
+                  </div>
+                </div>
+
+                <div class="form-grid" style="margin-bottom:14px;">
+                  <div>
+                    <label for="reportType" class="field-label">Classification</label>
+                    <select id="reportType" class="select-input">
+                      <option value="Flood Condition Update">Channel / Street Flood Observation</option>
+                      <option value="Evacuation Route Status">Evacuation Corridor Clearance</option>
+                      <option value="SOP 4 System Evaluation">SOP 4 Prototype Evaluation (FCPC Respondent)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="rating" class="field-label">SOP 4 Effectiveness Score (1–5)</label>
+                    <select id="rating" class="select-input mono tabular-nums">
+                      <option value="5">5.00 — Highly Effective</option>
+                      <option value="4">4.00 — Effective</option>
+                      <option value="3">3.00 — Moderately Effective</option>
+                      <option value="2">2.00 — Slightly Effective</option>
+                      <option value="1">1.00 — Not Effective</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                  <label for="message" class="field-label">Observation / Assessment Notes</label>
+                  <textarea id="message" rows="4" class="textarea-input" required placeholder="Specify water elevation at your street, route condition to FCPC, or evaluation of alarm response latency..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;">
+                  Submit Field Report
+                </button>
+              </form>
+
+              <p id="status" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-inner);background:var(--status-safe-bg);border:1px solid var(--status-safe-border);color:var(--status-safe-fg);font-size:12.5px;font-weight:600;"></p>
+            </section>
           </div>
 
-          <form id="feedbackForm">
-            <div class="form-row cols-2">
-              <div>
-                <label for="name" class="field-label">Full Name</label>
-                <input type="text" id="name" class="input-control" required placeholder="Juan Dela Cruz">
+          <!-- Right Pane: SOP 4 Statistical Summary & Verified Feed -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">SOP 4: Overall System Performance</h2>
+                  <p class="card-subtitle">Weighted Mean &amp; Standard Deviation across FCPC respondents (Chapter 3)</p>
+                </div>
               </div>
-              <div>
-                <label for="phone" class="field-label">Mobile Number</label>
-                <input type="tel" id="phone" class="input-control mono tabular-nums" required placeholder="09XXXXXXXXX">
-              </div>
-            </div>
 
-            <div class="form-row cols-2">
-              <div>
-                <label for="contact" class="field-label">Institutional Email / Handle</label>
-                <input type="text" id="contact" class="input-control" required placeholder="name@fcpc.edu.ph">
+              <div class="stats-summary-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:0;">
+                <div class="stat-pill">
+                  <div class="stat-pill-label">Weighted Mean</div>
+                  <div id="sop4-weighted-mean" class="stat-pill-val" style="color:var(--status-safe-fg);">4.83 / 5.00</div>
+                  <div class="stat-pill-sub">Interpretation: <strong>Highly Effective</strong></div>
+                </div>
+                <div class="stat-pill">
+                  <div class="stat-pill-label">Dispersion (SD)</div>
+                  <div id="sop4-sd" class="stat-pill-val">±0.41</div>
+                  <div id="sop4-count" class="stat-pill-sub mono tabular-nums">n = 6 Respondents</div>
+                </div>
               </div>
-              <div>
-                <label for="address" class="field-label">Barangay / Sector</label>
-                <input type="text" id="address" class="input-control" required value="Brgy. Narra, Francisco Homes, CSJDM" placeholder="Brgy. Narra, CSJDM, Bulacan">
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Verified Field &amp; Respondent Log</h2>
+                  <p class="card-subtitle">Brgy. Narra (FCPC) &amp; Brgy. Yakal (Phase G3) records</p>
+                </div>
               </div>
-            </div>
 
-            <div class="form-row cols-2">
-              <div>
-                <label for="reportType" class="field-label">Classification</label>
-                <select id="reportType" class="input-control">
-                  <option value="Flood Condition Update">Channel / Street Flood Observation</option>
-                  <option value="Evacuation Route Status">Evacuation Corridor Clearance</option>
-                  <option value="SOP 4 System Evaluation">SOP 4 Prototype Evaluation (FCPC Respondent)</option>
-                </select>
-              </div>
-              <div>
-                <label for="rating" class="field-label">SOP 4 Effectiveness Score (1–5)</label>
-                <select id="rating" class="input-control mono tabular-nums">
-                  <option value="5">5.00 — Highly Effective</option>
-                  <option value="4">4.00 — Effective</option>
-                  <option value="3">3.00 — Moderately Effective</option>
-                  <option value="2">2.00 — Slightly Effective</option>
-                  <option value="1">1.00 — Not Effective</option>
-                </select>
-              </div>
-            </div>
-
-            <div style="margin-bottom:16px;">
-              <label for="message" class="field-label">Observation / Assessment Notes</label>
-              <textarea id="message" rows="4" class="input-control" required placeholder="Specify water elevation at your street, route condition to FCPC, or evaluation of alarm response latency..."></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width:100%;">
-              Submit Field Report
-            </button>
-          </form>
-
-          <p id="status" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-control);background:var(--status-safe-bg);border:1px solid var(--status-safe-border);color:var(--status-safe-fg);font-size:12.5px;font-weight:500;"></p>
-        </section>
+              <div id="community-feed-list" class="feed-list"></div>
+            </section>
+          </div>
+        </div>
       </div>
-
-      <!-- Right Pane: SOP 4 Statistical Summary & Verified Feed -->
-      <div>
-        <section class="card" style="margin-bottom:16px;">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title">SOP 4: Overall System Performance</h3>
-              <p class="card-subtitle">Weighted Mean &amp; Standard Deviation across FCPC respondents (Chapter 3)</p>
-            </div>
-          </div>
-
-          <div class="stats-summary-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:0;">
-            <div class="stat-box">
-              <div class="s-title">Weighted Mean</div>
-              <div id="sop4-weighted-mean" class="s-main mono tabular-nums" style="color:var(--status-safe-fg);">4.83 / 5.00</div>
-              <div class="s-sub">Interpretation: <strong>Highly Effective</strong></div>
-            </div>
-            <div class="stat-box">
-              <div class="s-title">Dispersion (SD)</div>
-              <div id="sop4-sd" class="s-main mono tabular-nums">±0.41</div>
-              <div id="sop4-count" class="s-sub mono tabular-nums">n = 6 Respondents</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title">Verified Field &amp; Respondent Log</h3>
-              <p class="card-subtitle">Brgy. Narra (FCPC) &amp; Brgy. Yakal (Phase G3) records</p>
-            </div>
-          </div>
-
-          <div id="community-feed-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-        </section>
-      </div>
-    </div>
-  </main>
+    </main>
+  </div>
 
   <!-- Offline Telemetry Event Drawer -->
   <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
     <div class="drawer-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div class="drawer-header">
         <div>
-          <h3 id="drawer-title" style="font-size:14px;font-weight:600;">Offline Telemetry Event Log</h3>
-          <p style="font-size:12px;color:var(--subtle-foreground);">Persisted in local storage</p>
+          <h3 id="drawer-title" style="font-size:15px;font-weight:800;">Telemetry Alert Log</h3>
+          <p style="font-size:11.5px;color:var(--muted-foreground);">Persisted in local storage</p>
         </div>
-        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Event Drawer">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div style="display:flex;gap:6px;">
+          <button id="clear-notifs-btn" class="btn btn-secondary" style="min-height:32px;padding:4px 10px;font-size:11.5px;">Clear</button>
+          <button id="close-notif-drawer-btn" class="btn-icon" aria-label="Close Event Drawer" style="width:32px;height:32px;">&times;</button>
+        </div>
       </div>
-      <div id="notif-drawer-list" class="notif-list"></div>
-      <div style="padding-top:12px;border-top:1px solid var(--border);">
-        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Event Log</button>
-      </div>
+      <div id="notif-drawer-list" class="drawer-body"></div>
     </div>
   </div>
 
-  <!-- Anchored Mobile Bottom Navigation (< 768px) -->
+  <!-- Unified Mobile Bottom Navigation -->
   <nav class="bottom-nav" aria-label="Mobile Navigation">
-    <div class="bottom-nav-inner">
-      <a href="index.html" class="nav-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-        <span>Telemetry</span>
-      </a>
-      <a href="evacuation.html" class="nav-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-        </svg>
-        <span>Evac Map</span>
-      </a>
-      <a href="emergency.html" class="nav-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <span>SOS Alert</span>
-      </a>
-      <a href="feedback.html" class="nav-item active" aria-current="page">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <span>Reports</span>
-      </a>
-    </div>
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h12a1 1 0 001-1V10"/></svg>
+      <span>Monitor</span>
+    </a>
+    <a href="evacuation.html" class="nav-item">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+      <span>Evacuate</span>
+    </a>
+    <a href="emergency.html" class="nav-item">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Emergency</span>
+    </a>
+    <a href="feedback.html" class="nav-item active" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span>Reports</span>
+    </a>
   </nav>
 
   <script src="script.js"></script>

@@ -3,15 +3,15 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#09090B">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1E5EFF">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="assets/logo.png">
-  <title>Evacuation GIS &amp; Routing — Whaze Flood EWS</title>
+  <title>Track Evacuation Route — Whaze Flood EWS</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,217 +19,274 @@
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <main id="main-content" class="app-container">
-    <!-- Top Header -->
-    <header class="top-header">
-      <div class="header-left">
-        <a href="index.html" class="icon-btn" aria-label="Back to Telemetry">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </a>
-        <img src="assets/logo.png" alt="Whaze Logo" class="header-logo">
-        <div class="brand-titles">
-          <h1>Evacuation GIS &amp; Street Routing</h1>
-          <p class="brand-subtitle">Brgy. Narra &amp; Brgy. Yakal • Francisco Homes, CSJDM</p>
-        </div>
-      </div>
+  <div class="app-shell">
+    <!-- Top Royal Blue Hero Header (Matches Reference "Track Order" Header) -->
+    <header class="blue-hero-header">
+      <div class="blue-header-inner">
+        <div class="blue-header-top">
+          <a href="index.html" class="circle-header-btn" aria-label="Back to Telemetry Monitor">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </a>
 
-      <nav class="desktop-nav" aria-label="Desktop Navigation">
-        <a href="index.html">Telemetry</a>
-        <a href="evacuation.html" class="active" aria-current="page">Evacuation GIS</a>
-        <a href="emergency.html">SOS &amp; Dispatch</a>
-        <a href="feedback.html">Field Reports</a>
-      </nav>
+          <div class="header-center-location">
+            <div class="loc-caption">OSRM STREET FOOT ROUTING</div>
+            <div class="loc-title">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+                <line x1="9" y1="3" x2="9" y2="18"/>
+                <line x1="15" y1="6" x2="15" y2="21"/>
+              </svg>
+              <span>Track Evacuation Corridor</span>
+            </div>
+          </div>
 
-      <div class="header-actions">
-        <div id="connection-mode-pill" class="connection-pill">
-          <span class="dot" aria-hidden="true"></span>
-          <span id="connection-mode-text">Simulated Mode</span>
+          <nav class="desktop-nav" aria-label="Primary Navigation">
+            <a href="index.html">Monitor</a>
+            <a href="evacuation.html" class="active" aria-current="page">Evacuation Map</a>
+            <a href="emergency.html">SOS &amp; Hotlines</a>
+            <a href="feedback.html">Field Reports</a>
+          </nav>
+
+          <button type="button" id="open-notif-drawer-btn" class="circle-header-btn" aria-label="Open Telemetry Alert Log">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+            <span id="notif-badge-count" class="notif-badge hidden">0</span>
+          </button>
         </div>
-        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Event Log">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          <span id="notif-badge-count" class="badge-count">1</span>
-        </button>
+
+        <!-- Embedded White Pill Corridor Status Bar -->
+        <div class="header-search-pill">
+          <div class="pill-left">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="10" r="3"/>
+              <path d="M12 2a8 8 0 0 0-8 8c0 5.4 7 11.5 7.3 11.8a1 1 0 0 0 1.4 0C13 21.5 20 15.4 20 10a8 8 0 0 0-8-8Z"/>
+            </svg>
+            <span class="pill-text">Francisco Homes • Brgy. Narra &amp; Yakal, CSJDM</span>
+          </div>
+          <div id="connection-mode-pill" class="conn-pill">
+            <span class="conn-dot"></span>
+            <span id="connection-mode-text">Simulated Mode</span>
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- Active Corridor Specification Bar -->
-    <section class="card" style="margin-bottom:16px;">
-      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;">
-        <div style="min-width:0;flex:1 1 280px;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span class="status-label">OSRM Street-Snapped Foot Route</span>
-            <span class="status-badge-inline">SHORTEST SAFE WALK</span>
+    <!-- Curved White Sheet Body -->
+    <main id="main-content" class="sheet-body">
+      <div class="sheet-container">
+        <div class="map-layout">
+          <!-- LEFT COLUMN: Map Panel + 3-Step Corridor Stepper + Responder Contact Strip -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <section class="map-panel">
+              <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">
+                <div style="min-width:0;flex:1 1 240px;">
+                  <span class="status-badge-inline">SHORTEST STREET WALK</span>
+                  <h1 id="active-route-title" style="font-size:15.5px;font-weight:800;letter-spacing:-0.015em;margin-top:6px;color:var(--foreground);">
+                    Phase G3 (Brgy. Yakal) &rarr; First City Providential College (FCPC)
+                  </h1>
+                  <p id="active-route-meta" style="font-size:12px;color:var(--muted-foreground);margin-top:2px;">
+                    Via Phase G3 Collector &amp; Francisco Ave. • Tap map to set custom street origin
+                  </p>
+                </div>
+                <button type="button" id="btn-locate-gps" class="btn btn-primary" style="min-height:38px;padding:8px 14px;font-size:12.5px;">
+                  <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+                    <circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+                  </svg>
+                  <span>Use My GPS</span>
+                </button>
+              </div>
+
+              <p id="gps-status-msg" class="mono hidden" style="font-size:11.5px;color:var(--primary);padding:6px 10px;background:var(--primary-50);border-radius:8px;border:1px solid var(--border-blue);"></p>
+
+              <!-- Interactive Leaflet Map -->
+              <div id="evacuation-map" role="region" aria-label="Leaflet Evacuation Map of Francisco Homes, CSJDM, Bulacan"></div>
+
+              <!-- Route Telemetry Summary Strip -->
+              <div class="route-summary-strip">
+                <div class="route-stat">
+                  <div class="route-stat-label">Origin Node</div>
+                  <div class="route-stat-val">Phase G3 (Yakal)</div>
+                </div>
+                <div class="route-stat">
+                  <div class="route-stat-label">Street Distance</div>
+                  <div id="route-distance-val" class="route-stat-val">438 m</div>
+                </div>
+                <div class="route-stat">
+                  <div class="route-stat-label">Est. Foot Walk</div>
+                  <div id="route-eta-val" class="route-stat-val">5 min</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 3-Step Evacuation Corridor Stepper (Matches Reference "Track Order: Accepted -> Pickup -> Delivered" Stepper) -->
+            <section class="stepper-card" aria-label="Evacuation Route Progression">
+              <div class="stepper-header">
+                <span class="stepper-title">Active Corridor Progression</span>
+                <span class="stepper-badge">Street-Snapped OSRM</span>
+              </div>
+              <div class="stepper-track">
+                <div class="stepper-node completed">
+                  <div class="stepper-circle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="12" cy="12" r="4"/>
+                    </svg>
+                  </div>
+                  <span class="stepper-label">Origin</span>
+                  <span class="stepper-sub">Phase G3</span>
+                </div>
+
+                <div class="stepper-line completed"></div>
+
+                <div class="stepper-node active">
+                  <div class="stepper-circle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M13 4v16"/><path d="M17 4v16"/><path d="M19 4H9.5a4.5 4.5 0 0 0 0 9H13"/>
+                    </svg>
+                  </div>
+                  <span class="stepper-label">Corridor</span>
+                  <span id="stepper-corridor-road" class="stepper-sub">Francisco Ave</span>
+                </div>
+
+                <div class="stepper-line"></div>
+
+                <div class="stepper-node">
+                  <div class="stepper-circle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/>
+                    </svg>
+                  </div>
+                  <span class="stepper-label">Safe Hub</span>
+                  <span id="stepper-corridor-dest" class="stepper-sub">FCPC Campus</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Responder / Evacuation Coordinator Strip (Matches Reference "Tanzir Fahad - Delivery Boy [Msg] [Call]") -->
+            <section class="responder-strip" aria-label="Evacuation Triage Coordinator">
+              <div class="responder-info">
+                <div class="responder-avatar" aria-hidden="true">DR</div>
+                <div class="responder-meta">
+                  <div class="responder-name">CSJDM CDRRMO &amp; FCPC Triage</div>
+                  <div class="responder-role">Evacuation Route &amp; Shelter Coordinator</div>
+                </div>
+              </div>
+              <div class="responder-actions">
+                <a href="sms:+639175550101?body=WHAZE%20EVACUATION%20CHECK-IN%3A%20En%20route%20along%20Francisco%20Ave%20toward%20designated%20shelter." class="circle-action-pill" aria-label="Send SMS to Coordinator">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </a>
+                <a href="tel:0448152111" class="circle-action-pill call-btn" aria-label="Call CSJDM CDRRMO">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                </a>
+              </div>
+            </section>
           </div>
-          <h2 id="active-route-title" style="font-size:16px;font-weight:600;letter-spacing:-0.015em;margin-top:8px;color:var(--foreground);">
-            Phase G3 (Brgy. Yakal) &rarr; First City Providential College (FCPC)
-          </h2>
-          <p id="active-route-meta" style="font-size:12.5px;color:var(--muted-foreground);margin-top:2px;">
-            Via Phase G3 Collector &amp; Francisco Ave. • Tap anywhere on the map to set custom starting street
-          </p>
+
+          <!-- RIGHT COLUMN: Designated Evacuation Shelters & Turn-by-Turn Instructions -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <section class="shelter-list-card">
+              <div>
+                <h2 class="card-title">Designated Evacuation Shelters</h2>
+                <p class="card-subtitle">Tap a shelter to plot shortest street-snapped foot route</p>
+              </div>
+
+              <button type="button" class="shelter-item shelter-select-btn active active-shelter" data-shelter-id="fcpc" style="text-align:left;width:100%;">
+                <div class="shelter-head">
+                  <span class="shelter-name">First City Providential College (FCPC)</span>
+                  <span class="shelter-tag primary">PRIMARY HUB</span>
+                </div>
+                <p class="shelter-meta">
+                  Francisco Ave., Brgy. Narra • Multi-story concrete campus &amp; Triage
+                </p>
+                <div class="mono tabular-nums" style="font-size:11.5px;color:var(--primary);margin-top:8px;font-weight:700;">
+                  Occupancy: 142 / 650 • Street Walk: 438 m (5 min)
+                </div>
+              </button>
+
+              <button type="button" class="shelter-item shelter-select-btn" data-shelter-id="narra_hall" style="text-align:left;width:100%;">
+                <div class="shelter-head">
+                  <span class="shelter-name">Brgy. Narra Multi-Purpose Covered Court</span>
+                  <span class="shelter-tag secondary">SECONDARY</span>
+                </div>
+                <p class="shelter-meta">
+                  Francisco Ave. North, Brgy. Narra • Barangay DRRM Command Post
+                </p>
+                <div class="mono tabular-nums" style="font-size:11.5px;color:var(--muted-foreground);margin-top:8px;font-weight:600;">
+                  Occupancy: 68 / 250 • Street Walk: 474 m (6 min)
+                </div>
+              </button>
+
+              <button type="button" class="shelter-item shelter-select-btn" data-shelter-id="yakal_hub" style="text-align:left;width:100%;">
+                <div class="shelter-head">
+                  <span class="shelter-name">Brgy. Yakal Community Evacuation Center</span>
+                  <span class="shelter-tag secondary">SECONDARY</span>
+                </div>
+                <p class="shelter-meta">
+                  Francisco Homes 1, Brgy. Yakal • Elevated Barangay Shelter Facility
+                </p>
+                <div class="mono tabular-nums" style="font-size:11.5px;color:var(--muted-foreground);margin-top:8px;font-weight:600;">
+                  Occupancy: 54 / 200 • Street Walk: 595 m (7 min)
+                </div>
+              </button>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Street-by-Street Turn Instructions</h2>
+                  <p class="card-subtitle">Follows paved road network (never cuts through houses or creeks)</p>
+                </div>
+              </div>
+              <ol id="turn-by-turn-list" style="padding-left:18px;font-size:12.5px;color:var(--muted-foreground);display:flex;flex-direction:column;gap:8px;"></ol>
+            </section>
+          </div>
         </div>
-
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1 1 auto;justify-content:flex-end;">
-          <div style="background:var(--muted-surface);border:1px solid var(--border);padding:8px 14px;border-radius:var(--radius-inner);flex:1 1 90px;">
-            <span class="mono" style="font-size:10.5px;color:var(--subtle-foreground);text-transform:uppercase;display:block;">Street Dist.</span>
-            <strong id="route-distance-val" class="mono tabular-nums" style="font-size:14px;color:var(--foreground);">438 m</strong>
-          </div>
-          <div style="background:var(--muted-surface);border:1px solid var(--border);padding:8px 14px;border-radius:var(--radius-inner);flex:1 1 90px;">
-            <span class="mono" style="font-size:10.5px;color:var(--subtle-foreground);text-transform:uppercase;display:block;">Est. Walk</span>
-            <strong id="route-eta-val" class="mono tabular-nums" style="font-size:14px;color:var(--foreground);">5 min</strong>
-          </div>
-          <button type="button" id="btn-locate-gps" class="btn btn-primary" style="flex:1 1 150px;">
-            Locate GPS Origin
-          </button>
-        </div>
       </div>
-      <p id="gps-status-msg" class="mono hidden" style="font-size:11.5px;color:var(--muted-foreground);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"></p>
-    </section>
-
-    <div class="dashboard-grid">
-      <!-- Left Pane: Leaflet Spatial View -->
-      <div>
-        <section class="card" style="padding:12px;">
-          <div id="evacuation-map" role="region" aria-label="Leaflet Evacuation Map of Francisco Homes, CSJDM, Bulacan"></div>
-
-          <div class="map-legend" style="padding:4px 4px 0 4px;">
-            <span class="legend-item">
-              <span class="legend-dot" style="background:#16A34A;"></span>
-              Primary Hub (FCPC)
-            </span>
-            <span class="legend-item">
-              <span class="legend-dot" style="background:#1D4ED8;"></span>
-              Barangay Shelters
-            </span>
-            <span class="legend-item">
-              <span class="legend-dot" style="background:#0284C7;"></span>
-              ESP32 Node / Origin
-            </span>
-            <span class="legend-item">
-              <span class="legend-dot" style="background:#D97706;"></span>
-              Creek Hazard Basin
-            </span>
-          </div>
-        </section>
-      </div>
-
-      <!-- Right Pane: Designated Shelters & Waypoints -->
-      <div>
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title">Designated Evacuation Shelters</h3>
-              <p class="card-subtitle">Select facility to plot shortest street-snapped foot route</p>
-            </div>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <button type="button" class="shelter-select-btn active-shelter" data-shelter-id="fcpc">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                <strong style="color:var(--foreground);font-size:13.5px;">First City Providential College (FCPC)</strong>
-                <span class="status-badge-inline">PRIMARY</span>
-              </div>
-              <p style="font-size:12px;color:var(--muted-foreground);margin-top:4px;">
-                Francisco Ave., Brgy. Narra, Francisco Homes • Multi-story concrete campus, Medical Triage
-              </p>
-              <div class="mono tabular-nums" style="font-size:11.5px;color:var(--foreground);margin-top:8px;font-weight:500;">
-                Occupancy: 142 / 650 • Street Walk: 438 m (5 min)
-              </div>
-            </button>
-
-            <button type="button" class="shelter-select-btn" data-shelter-id="narra_hall">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                <strong style="color:var(--foreground);font-size:13.5px;">Brgy. Narra Multi-Purpose Covered Court</strong>
-                <span class="status-label">SECONDARY</span>
-              </div>
-              <p style="font-size:12px;color:var(--muted-foreground);margin-top:4px;">
-                Francisco Ave. North, Brgy. Narra • Barangay DRRM Command Post &amp; Relief Staging
-              </p>
-              <div class="mono tabular-nums" style="font-size:11.5px;color:var(--foreground);margin-top:8px;font-weight:500;">
-                Occupancy: 68 / 250 • Street Walk: 474 m (6 min)
-              </div>
-            </button>
-
-            <button type="button" class="shelter-select-btn" data-shelter-id="yakal_hub">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                <strong style="color:var(--foreground);font-size:13.5px;">Brgy. Yakal Community Evacuation Center</strong>
-                <span class="status-label">SECONDARY</span>
-              </div>
-              <p style="font-size:12px;color:var(--muted-foreground);margin-top:4px;">
-                Francisco Homes 1, Brgy. Yakal • Elevated Barangay Shelter Facility
-              </p>
-              <div class="mono tabular-nums" style="font-size:11.5px;color:var(--foreground);margin-top:8px;font-weight:500;">
-                Occupancy: 54 / 200 • Street Walk: 595 m (7 min)
-              </div>
-            </button>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <h3 class="card-title">Street-by-Street Turn Instructions</h3>
-              <p class="card-subtitle">Follows actual paved road network (avoids crossing blocks or creeks)</p>
-            </div>
-          </div>
-          <ol id="turn-by-turn-list" style="padding-left:18px;font-size:12.5px;color:var(--muted-foreground);display:flex;flex-direction:column;gap:8px;"></ol>
-        </section>
-      </div>
-    </div>
-  </main>
+    </main>
+  </div>
 
   <!-- Offline Telemetry Event Drawer -->
   <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
     <div class="drawer-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div class="drawer-header">
         <div>
-          <h3 id="drawer-title" style="font-size:14px;font-weight:600;">Offline Telemetry Event Log</h3>
-          <p style="font-size:12px;color:var(--subtle-foreground);">Persisted in local storage</p>
+          <h3 id="drawer-title" style="font-size:15px;font-weight:800;">Telemetry Alert Log</h3>
+          <p style="font-size:11.5px;color:var(--muted-foreground);">Persisted in local storage</p>
         </div>
-        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Event Drawer">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div style="display:flex;gap:6px;">
+          <button id="clear-notifs-btn" class="btn btn-secondary" style="min-height:32px;padding:4px 10px;font-size:11.5px;">Clear</button>
+          <button id="close-notif-drawer-btn" class="btn-icon" aria-label="Close Event Drawer" style="width:32px;height:32px;">&times;</button>
+        </div>
       </div>
-      <div id="notif-drawer-list" class="notif-list"></div>
-      <div style="padding-top:12px;border-top:1px solid var(--border);">
-        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Event Log</button>
-      </div>
+      <div id="notif-drawer-list" class="drawer-body"></div>
     </div>
   </div>
 
-  <!-- Anchored Mobile Bottom Navigation (< 768px) -->
+  <!-- Unified Mobile Bottom Navigation -->
   <nav class="bottom-nav" aria-label="Mobile Navigation">
-    <div class="bottom-nav-inner">
-      <a href="index.html" class="nav-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-        <span>Telemetry</span>
-      </a>
-      <a href="evacuation.html" class="nav-item active" aria-current="page">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-        </svg>
-        <span>Evac Map</span>
-      </a>
-      <a href="emergency.html" class="nav-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <span>SOS Alert</span>
-      </a>
-      <a href="feedback.html" class="nav-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <span>Reports</span>
-      </a>
-    </div>
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h12a1 1 0 001-1V10"/></svg>
+      <span>Monitor</span>
+    </a>
+    <a href="evacuation.html" class="nav-item active" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+      <span>Evacuate</span>
+    </a>
+    <a href="emergency.html" class="nav-item">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Emergency</span>
+    </a>
+    <a href="feedback.html" class="nav-item">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span>Reports</span>
+    </a>
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -525,7 +582,23 @@
         document.querySelectorAll('.shelter-select-btn').forEach((btn) => {
           const isMatch = btn.getAttribute('data-shelter-id') === shelterKey;
           btn.classList.toggle('active-shelter', isMatch);
+          btn.classList.toggle('active', isMatch);
         });
+
+        const stepRoadEl = document.getElementById('stepper-corridor-road');
+        const stepDestEl = document.getElementById('stepper-corridor-dest');
+        if (stepRoadEl && stepDestEl) {
+          if (shelterKey === 'fcpc') {
+            stepRoadEl.textContent = 'Francisco Ave';
+            stepDestEl.textContent = 'FCPC Campus';
+          } else if (shelterKey === 'narra_hall') {
+            stepRoadEl.textContent = 'Francisco Ave N.';
+            stepDestEl.textContent = 'Brgy. Narra Court';
+          } else {
+            stepRoadEl.textContent = 'Phase F/G Rd';
+            stepDestEl.textContent = 'Brgy. Yakal Hub';
+          }
+        }
 
         // If using default Sunga Residence origin, immediately render pre-verified street-snapped geometry
         const isDefaultOrigin =
