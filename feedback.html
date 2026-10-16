@@ -4,82 +4,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1D4ED8">
+  <meta name="theme-color" content="#09090B">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="assets/logo.png">
-  <title>Community Feedback &amp; Evaluation — Whaze Flood EWS</title>
+  <title>Field Reports &amp; SOP 4 Evaluation — Whaze Flood EWS</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <!-- RA 10173 Data Privacy Agreement Modal -->
   <div id="agreementModal" class="drawer-backdrop hidden" style="justify-content:center;align-items:center;padding:16px;" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
-    <div class="card" style="width:100%;max-width:460px;padding:24px;box-shadow:var(--shadow-lg);">
-      <div style="font-size:2rem;text-align:center;margin-bottom:8px;">🛡️</div>
-      <h2 id="privacy-modal-title" style="font-size:1.25rem;font-weight:800;text-align:center;color:var(--text-primary);margin-bottom:10px;">
-        User Data Privacy Agreement (RA 10173)
+    <div class="card" style="width:100%;max-width:460px;padding:24px;box-shadow:var(--shadow-overlay);">
+      <span class="status-label" style="margin-bottom:8px;">Republic Act No. 10173</span>
+      <h2 id="privacy-modal-title" style="font-size:16px;font-weight:600;letter-spacing:-0.015em;color:var(--foreground);margin-bottom:12px;">
+        Data Privacy &amp; Research Consent Notice
       </h2>
 
-      <div style="font-size:0.82rem;color:var(--text-secondary);background:var(--bg-subtle);border:1px solid var(--border-color);padding:14px;border-radius:var(--radius-md);max-height:210px;overflow-y:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:8px;">
-        <p>By using this community reporting module, you consent to provide your <strong>Name, Contact Number, Barangay/Zone, and Incident Report</strong> for disaster coordination.</p>
-        <p>In strict compliance with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, your information is used solely to verify flood incidents, coordinate evacuation support with CSJDM DRRMO &amp; FCPC responders, and evaluate system effectiveness.</p>
-        <p>Per <strong>Republic Act No. 10175 (Cybercrime Prevention Act)</strong> and ethical research guidelines of <strong>First City Providential College</strong>, all records are protected and never shared with unauthorized third parties.</p>
+      <div style="font-size:12.5px;color:var(--muted-foreground);background:var(--muted-surface);border:1px solid var(--border);padding:14px;border-radius:var(--radius-inner);max-height:220px;overflow-y:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:8px;">
+        <p>By submitting a report through this module, you consent to provide your <strong>Name, Contact Number, Barangay Sector, and Field Observation</strong> for community flood coordination.</p>
+        <p>In compliance with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, all data is processed strictly for flood verification, evacuation coordination with CSJDM CDRRMO &amp; First City Providential College (FCPC), and system evaluation.</p>
+        <p>Per <strong>Republic Act No. 10175</strong> and FCPC research ethics guidelines, records remain confidential and are never disclosed to unauthorized parties.</p>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <button type="button" id="acceptBtn" class="btn btn-primary" style="width:100%;padding:12px;">
-          ✅ I Accept and Agree (Proceed to Feedback)
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" id="acceptBtn" class="btn btn-primary" style="flex:1.5;">
+          Accept &amp; Continue
         </button>
-        <button type="button" id="declineBtn" class="btn btn-secondary" style="width:100%;">
+        <button type="button" id="declineBtn" class="btn btn-secondary" style="flex:1;">
           Decline
         </button>
       </div>
-      <p id="modalStatus" class="hidden" style="font-size:0.78rem;color:#DC2626;font-weight:700;text-align:center;margin-top:10px;">
-        ⚠️ You must accept the RA 10173 Data Privacy terms to submit personal contact information.
+      <p id="modalStatus" class="hidden" style="font-size:12px;color:var(--status-crit-fg);font-weight:500;margin-top:10px;">
+        Consent to RA 10173 terms is required before submitting personal contact details.
       </p>
     </div>
   </div>
 
-  <main class="app-container">
+  <main id="main-content" class="app-container">
     <!-- Top Header -->
     <header class="top-header">
       <div class="header-left">
-        <a href="index.html" class="icon-btn" aria-label="Back to Dashboard" style="text-decoration:none;">←</a>
+        <a href="index.html" class="icon-btn" aria-label="Back to Telemetry">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
         <img src="assets/logo.png" alt="Whaze Logo" class="header-logo">
         <div class="brand-titles">
-          <h1>Community Feedback &amp; Reports</h1>
-          <p class="brand-subtitle">Incident Reporting &amp; SOP 4 System Evaluation</p>
+          <h1>Field Reports &amp; SOP 4 Evaluation</h1>
+          <p class="brand-subtitle">Community Observation Log &amp; Respondent Assessment</p>
         </div>
       </div>
 
+      <nav class="desktop-nav" aria-label="Desktop Navigation">
+        <a href="index.html">Telemetry</a>
+        <a href="evacuation.html">Evacuation GIS</a>
+        <a href="emergency.html">SOS &amp; Dispatch</a>
+        <a href="feedback.html" class="active" aria-current="page">Field Reports</a>
+      </nav>
+
       <div class="header-actions">
         <div id="connection-mode-pill" class="connection-pill">
-          <span class="dot"></span>
+          <span class="dot" aria-hidden="true"></span>
           <span id="connection-mode-text">Simulated Mode</span>
         </div>
-        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Offline Alert Log">
-          🔔
+        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Event Log">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
           <span id="notif-badge-count" class="badge-count">1</span>
         </button>
       </div>
     </header>
 
     <div class="dashboard-grid">
-      <!-- Left Column: Community Feedback & Incident Form -->
+      <!-- Left Pane: Field Observation & Respondent Form -->
       <div>
         <section class="card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">💭 Submit Flood Status or System Feedback</h2>
-              <p class="card-subtitle">Share street-level flood conditions or evaluate the Whaze EWS prototype</p>
+              <h2 class="card-title">Submit Field Observation or System Evaluation</h2>
+              <p class="card-subtitle">Log street-level flood conditions or record SOP 4 respondent ratings</p>
             </div>
-            <button type="button" id="reopenPrivacyBtn" class="btn btn-secondary" style="padding:5px 10px;font-size:0.74rem;">
-              🛡️ RA 10173 Policy
+            <button type="button" id="reopenPrivacyBtn" class="btn btn-secondary" style="padding:4px 10px;font-size:11.5px;min-height:30px;">
+              RA 10173 Notice
             </button>
           </div>
 
@@ -87,135 +101,145 @@
             <div class="form-row cols-2">
               <div>
                 <label for="name" class="field-label">Full Name</label>
-                <input type="text" id="name" class="input-control" required placeholder="e.g., Juan Dela Cruz">
+                <input type="text" id="name" class="input-control" required placeholder="Juan Dela Cruz">
               </div>
               <div>
-                <label for="phone" class="field-label">Phone Number</label>
-                <input type="tel" id="phone" class="input-control mono" required placeholder="09XXXXXXXXX">
-              </div>
-            </div>
-
-            <div class="form-row cols-2">
-              <div>
-                <label for="contact" class="field-label">Email or Social Handle</label>
-                <input type="text" id="contact" class="input-control" required placeholder="@username or email@fcpc.edu.ph">
-              </div>
-              <div>
-                <label for="address" class="field-label">Address / Barangay</label>
-                <input type="text" id="address" class="input-control" required value="Brgy. Narra, Francisco Homes, CSJDM" placeholder="e.g., Brgy. Narra, CSJDM, Bulacan">
+                <label for="phone" class="field-label">Mobile Number</label>
+                <input type="tel" id="phone" class="input-control mono tabular-nums" required placeholder="09XXXXXXXXX">
               </div>
             </div>
 
             <div class="form-row cols-2">
               <div>
-                <label for="reportType" class="field-label">Report Category</label>
+                <label for="contact" class="field-label">Institutional Email / Handle</label>
+                <input type="text" id="contact" class="input-control" required placeholder="name@fcpc.edu.ph">
+              </div>
+              <div>
+                <label for="address" class="field-label">Barangay / Sector</label>
+                <input type="text" id="address" class="input-control" required value="Brgy. Narra, Francisco Homes, CSJDM" placeholder="Brgy. Narra, CSJDM, Bulacan">
+              </div>
+            </div>
+
+            <div class="form-row cols-2">
+              <div>
+                <label for="reportType" class="field-label">Classification</label>
                 <select id="reportType" class="input-control">
-                  <option value="Flood Condition Update">🌊 Street / Creek Flood Condition Update</option>
-                  <option value="Evacuation Route Status">🛣️ Evacuation Route Clearance Status</option>
-                  <option value="SOP 4 System Evaluation">⭐ SOP 4 Prototype Evaluation (FCPC Respondent)</option>
+                  <option value="Flood Condition Update">Channel / Street Flood Observation</option>
+                  <option value="Evacuation Route Status">Evacuation Corridor Clearance</option>
+                  <option value="SOP 4 System Evaluation">SOP 4 Prototype Evaluation (FCPC Respondent)</option>
                 </select>
               </div>
               <div>
-                <label for="rating" class="field-label">EWS Effectiveness Rating (SOP 4)</label>
-                <select id="rating" class="input-control">
-                  <option value="5">⭐⭐⭐⭐⭐ (5.0 - Highly Effective)</option>
-                  <option value="4">⭐⭐⭐⭐ (4.0 - Effective)</option>
-                  <option value="3">⭐⭐⭐ (3.0 - Moderately Effective)</option>
-                  <option value="2">⭐⭐ (2.0 - Needs Improvement)</option>
-                  <option value="1">⭐ (1.0 - Ineffective)</option>
+                <label for="rating" class="field-label">SOP 4 Effectiveness Score (1–5)</label>
+                <select id="rating" class="input-control mono tabular-nums">
+                  <option value="5">5.00 — Highly Effective</option>
+                  <option value="4">4.00 — Effective</option>
+                  <option value="3">3.00 — Moderately Effective</option>
+                  <option value="2">2.00 — Slightly Effective</option>
+                  <option value="1">1.00 — Not Effective</option>
                 </select>
               </div>
             </div>
 
-            <div style="margin-bottom:14px;">
-              <label for="message" class="field-label">Your Situation, Observation, or Feedback Message</label>
-              <textarea id="message" rows="4" class="input-control" required placeholder="Describe water depth on your street, route accessibility to FCPC, or feedback on the flood alarm speed..."></textarea>
+            <div style="margin-bottom:16px;">
+              <label for="message" class="field-label">Observation / Assessment Notes</label>
+              <textarea id="message" rows="4" class="input-control" required placeholder="Specify water elevation at your street, route condition to FCPC, or evaluation of alarm response latency..."></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;">
-              📤 Submit Community Feedback
+            <button type="submit" class="btn btn-primary" style="width:100%;">
+              Submit Field Report
             </button>
           </form>
 
-          <p id="status" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--safe-soft);color:#14532D;font-size:0.84rem;font-weight:700;text-align:center;"></p>
+          <p id="status" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-control);background:var(--status-safe-bg);border:1px solid var(--status-safe-border);color:var(--status-safe-fg);font-size:12.5px;font-weight:500;"></p>
         </section>
       </div>
 
-      <!-- Right Column: SOP 4 Respondent Weighted Mean & Community Feed -->
+      <!-- Right Pane: SOP 4 Statistical Summary & Verified Feed -->
       <div>
-        <!-- SOP 4 Summary Card -->
         <section class="card" style="margin-bottom:16px;">
           <div class="card-header">
             <div>
-              <h3 class="card-title">📈 SOP 4: Overall System Performance Assessment</h3>
-              <p class="card-subtitle">Weighted Mean &amp; SD based on FCPC respondent evaluations (Chapter 3)</p>
+              <h3 class="card-title">SOP 4: Overall System Performance</h3>
+              <p class="card-subtitle">Weighted Mean &amp; Standard Deviation across FCPC respondents (Chapter 3)</p>
             </div>
           </div>
 
-          <div class="stats-summary-grid" style="margin-bottom:0;">
+          <div class="stats-summary-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:0;">
             <div class="stat-box">
-              <div class="s-title">Weighted Mean Score</div>
-              <div id="sop4-weighted-mean" class="s-main mono" style="color:#15803D;">4.83 / 5.00</div>
-              <div class="s-sub">Verbal Interpretation: <strong>Highly Effective</strong></div>
+              <div class="s-title">Weighted Mean</div>
+              <div id="sop4-weighted-mean" class="s-main mono tabular-nums" style="color:var(--status-safe-fg);">4.83 / 5.00</div>
+              <div class="s-sub">Interpretation: <strong>Highly Effective</strong></div>
             </div>
             <div class="stat-box">
-              <div class="s-title">Assessment Consistency</div>
-              <div id="sop4-sd" class="s-main mono">SD = ±0.41</div>
-              <div id="sop4-count" class="s-sub mono">n = 6 FCPC Respondents</div>
+              <div class="s-title">Dispersion (SD)</div>
+              <div id="sop4-sd" class="s-main mono tabular-nums">±0.41</div>
+              <div id="sop4-count" class="s-sub mono tabular-nums">n = 6 Respondents</div>
             </div>
           </div>
         </section>
 
-        <!-- Live Community Reports Feed -->
         <section class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">📣 Recent Community &amp; Respondent Reports</h3>
-              <p class="card-subtitle">Verified reports from Brgy. Narra &amp; Brgy. Yakal residents</p>
+              <h3 class="card-title">Verified Field &amp; Respondent Log</h3>
+              <p class="card-subtitle">Brgy. Narra (FCPC) &amp; Brgy. Yakal (Phase G3) records</p>
             </div>
           </div>
 
-          <div id="community-feed-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div id="community-feed-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         </section>
       </div>
     </div>
   </main>
 
-  <!-- Offline Notification Center Drawer -->
-  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-label="Offline Flood Alert Log">
+  <!-- Offline Telemetry Event Drawer -->
+  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
     <div class="drawer-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border);">
         <div>
-          <h3 style="font-size:1.05rem;font-weight:800;">🔔 Offline Flood Alert Log</h3>
-          <p style="font-size:0.75rem;color:var(--text-muted);">Stored locally on device</p>
+          <h3 id="drawer-title" style="font-size:14px;font-weight:600;">Offline Telemetry Event Log</h3>
+          <p style="font-size:12px;color:var(--subtle-foreground);">Persisted in local storage</p>
         </div>
-        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Alert Drawer">✕</button>
+        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Event Drawer">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
       <div id="notif-drawer-list" class="notif-list"></div>
-      <div style="padding-top:12px;border-top:1px solid var(--border-subtle);">
-        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Log</button>
+      <div style="padding-top:12px;border-top:1px solid var(--border);">
+        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Event Log</button>
       </div>
     </div>
   </div>
 
-  <!-- Unified Bottom Navigation Bar -->
-  <nav class="bottom-nav" aria-label="Primary Navigation">
+  <!-- Anchored Mobile Bottom Navigation (< 768px) -->
+  <nav class="bottom-nav" aria-label="Mobile Navigation">
     <div class="bottom-nav-inner">
       <a href="index.html" class="nav-item">
-        <span class="nav-icon">🏠</span>
-        <span>Dashboard</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <span>Telemetry</span>
       </a>
       <a href="evacuation.html" class="nav-item">
-        <span class="nav-icon">🗺️</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
         <span>Evac Map</span>
       </a>
       <a href="emergency.html" class="nav-item">
-        <span class="nav-icon">🚨</span>
-        <span>Emergency</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>SOS Alert</span>
       </a>
       <a href="feedback.html" class="nav-item active" aria-current="page">
-        <span class="nav-icon">💬</span>
-        <span>Feedback</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>Reports</span>
       </a>
     </div>
   </nav>
@@ -240,7 +264,7 @@
           category: 'SOP 4 System Evaluation',
           rating: 5,
           message: 'ESP32 ultrasonic sensor and piezo alarm triggered accurately during controlled water-level rise tests. Mobile alerts appeared immediately offline.',
-          time: 'Today, 08:40 AM'
+          time: '08:40 AM'
         },
         {
           id: 'R-02',
@@ -249,7 +273,7 @@
           category: 'Evacuation Route Status',
           rating: 5,
           message: 'D. Silang St. and Francisco Ave. corridor to First City Providential College is clear and passable for pedestrian evacuation.',
-          time: 'Today, 08:35 AM'
+          time: '08:35 AM'
         },
         {
           id: 'R-03',
@@ -257,8 +281,8 @@
           address: 'Brgy. Narra, CSJDM, Bulacan',
           category: 'SOP 4 System Evaluation',
           rating: 5,
-          message: 'Green, Yellow, and Red LED indicators match the mobile dashboard water depth readings with consistent sub-50ms response time.',
-          time: 'Today, 08:28 AM'
+          message: 'Green, Yellow, and Red GPIO indicators match the mobile dashboard water depth readings with consistent sub-50ms response time.',
+          time: '08:28 AM'
         },
         {
           id: 'R-04',
@@ -266,8 +290,8 @@
           address: 'Francisco Homes, CSJDM, Bulacan',
           category: 'SOP 4 System Evaluation',
           rating: 5,
-          message: 'Leaflet GIS map clearly pinpoints FCPC and secondary barangay shelters even when internet drops.',
-          time: 'Today, 08:22 AM'
+          message: 'Leaflet GIS map clearly pinpoints FCPC and secondary barangay shelters even when internet connectivity drops.',
+          time: '08:22 AM'
         },
         {
           id: 'R-05',
@@ -275,8 +299,8 @@
           address: 'Brgy. Narra, Francisco Homes, CSJDM',
           category: 'SOP 4 System Evaluation',
           rating: 4,
-          message: 'Very helpful early warning tool for residents near low-lying waterways. Clear evacuation checklist.',
-          time: 'Today, 08:18 AM'
+          message: 'Effective early warning instrumentation for residents near low-lying waterways. Clear pre-evacuation protocol checklist.',
+          time: '08:18 AM'
         },
         {
           id: 'R-06',
@@ -284,12 +308,11 @@
           address: 'Brgy. Yakal, Francisco Homes 1, CSJDM',
           category: 'Flood Condition Update',
           rating: 5,
-          message: 'Water channel at Phase G3 currently at 12.0 cm (Safe standby level). Sensor enclosure IP65 seal verified intact.',
-          time: 'Today, 08:12 AM'
+          message: 'Water channel at Phase G3 currently at 12.0 cm (Nominal standby). Sensor enclosure IP65 seal verified intact.',
+          time: '08:12 AM'
         }
       ];
 
-      // Show privacy modal only if not yet accepted
       const isAccepted = localStorage.getItem(STORAGE_KEYS.PRIVACY_ACCEPTED) === 'true';
       if (!isAccepted && agreementModal) {
         agreementModal.classList.remove('hidden');
@@ -316,7 +339,6 @@
         });
       }
 
-      // Escape key closes modal if already accepted
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && localStorage.getItem(STORAGE_KEYS.PRIVACY_ACCEPTED) === 'true') {
           agreementModal.classList.add('hidden');
@@ -346,22 +368,22 @@
         const countEl = document.getElementById('sop4-count');
 
         if (meanEl) meanEl.textContent = `${stats.mean.toFixed(2)} / 5.00`;
-        if (sdEl) sdEl.textContent = `SD = ±${stats.sd.toFixed(2)}`;
-        if (countEl) countEl.textContent = `n = ${stats.count} Respondent Reports`;
+        if (sdEl) sdEl.textContent = `±${stats.sd.toFixed(2)}`;
+        if (countEl) countEl.textContent = `n = ${stats.count} Records`;
 
         if (feedList) {
           feedList.innerHTML = reports
             .map(
               (r) => `
-              <div style="padding:12px;border-radius:var(--radius-md);background:var(--bg-subtle);border:1px solid var(--border-subtle);">
+              <div style="padding:12px;border-radius:var(--radius-inner);background:var(--muted-surface);border:1px solid var(--border);">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <strong style="font-size:0.86rem;color:var(--text-primary);">${r.name}</strong>
-                  <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">${r.time}</span>
+                  <strong style="font-size:13px;color:var(--foreground);">${r.name}</strong>
+                  <span class="mono tabular-nums" style="font-size:11px;color:var(--subtle-foreground);">${r.time}</span>
                 </div>
-                <div style="font-size:0.75rem;color:var(--brand-primary);font-weight:700;margin-top:2px;">
-                  📍 ${r.address} • ${r.category} • ${'⭐'.repeat(Number(r.rating || 5))}
+                <div class="mono tabular-nums" style="font-size:11px;color:var(--muted-foreground);margin-top:3px;">
+                  ${r.address} • ${r.category} • Score: ${Number(r.rating || 5).toFixed(2)} / 5.00
                 </div>
-                <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px;">
+                <p style="font-size:12.5px;color:var(--foreground);margin-top:6px;">
                   ${r.message}
                 </p>
               </div>
@@ -387,7 +409,7 @@
             category: document.getElementById('reportType').value,
             rating: Number(document.getElementById('rating').value || 5),
             message: document.getElementById('message').value.trim(),
-            time: 'Just now (' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ')'
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           };
 
           reports.unshift(newReport);
@@ -395,14 +417,14 @@
 
           pushNotification(
             'SAFE',
-            `💬 Community Report Submitted (${newReport.name})`,
-            `${newReport.category}: "${newReport.message.slice(0, 70)}..."`,
+            `Field Report Logged (${newReport.name})`,
+            `${newReport.category}: "${newReport.message.slice(0, 70)}"`,
             loadState().waterLevelCm
           );
 
           renderFeedAndSop4();
           if (statusBanner) {
-            statusBanner.textContent = '✅ Feedback & incident report saved and added to the community feed!';
+            statusBanner.textContent = 'Field report recorded and appended to the verification log.';
             statusBanner.classList.remove('hidden');
           }
           document.getElementById('message').value = '';

@@ -4,212 +4,232 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1D4ED8">
+  <meta name="theme-color" content="#09090B">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="assets/logo.png">
-  <title>Evacuation Routes &amp; GIS Map — Whaze Flood EWS</title>
+  <title>Evacuation GIS &amp; Routing — Whaze Flood EWS</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <main class="app-container">
+  <main id="main-content" class="app-container">
     <!-- Top Header -->
     <header class="top-header">
       <div class="header-left">
-        <a href="index.html" class="icon-btn" aria-label="Back to Dashboard" style="text-decoration:none;">←</a>
+        <a href="index.html" class="icon-btn" aria-label="Back to Telemetry">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
         <img src="assets/logo.png" alt="Whaze Logo" class="header-logo">
         <div class="brand-titles">
-          <h1>Evacuation Routes &amp; GIS</h1>
-          <p class="brand-subtitle">Brgy. Narra &amp; Brgy. Yakal, Francisco Homes, CSJDM</p>
+          <h1>Evacuation GIS &amp; Routing</h1>
+          <p class="brand-subtitle">Brgy. Narra &amp; Brgy. Yakal • Francisco Homes, CSJDM</p>
         </div>
       </div>
 
+      <nav class="desktop-nav" aria-label="Desktop Navigation">
+        <a href="index.html">Telemetry</a>
+        <a href="evacuation.html" class="active" aria-current="page">Evacuation GIS</a>
+        <a href="emergency.html">SOS &amp; Dispatch</a>
+        <a href="feedback.html">Field Reports</a>
+      </nav>
+
       <div class="header-actions">
         <div id="connection-mode-pill" class="connection-pill">
-          <span class="dot"></span>
+          <span class="dot" aria-hidden="true"></span>
           <span id="connection-mode-text">Simulated Mode</span>
         </div>
-        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Offline Alert Log">
-          🔔
+        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Event Log">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
           <span id="notif-badge-count" class="badge-count">1</span>
         </button>
       </div>
     </header>
 
-    <!-- Active Route Summary Strip -->
-    <section class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#1E3A8A,#1D4ED8);color:#FFFFFF;border:none;">
-      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">
-        <div>
-          <span style="font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;background:rgba(255,255,255,0.2);padding:3px 9px;border-radius:999px;">
-            Recommended Primary Evacuation Route
-          </span>
-          <h2 id="active-route-title" style="font-size:1.25rem;font-weight:800;margin-top:6px;">
+    <!-- Active Corridor Specification Bar -->
+    <section class="card" style="margin-bottom:16px;">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;">
+        <div style="min-width:0;flex:1 1 280px;">
+          <span class="status-label">Active Evacuation Corridor</span>
+          <h2 id="active-route-title" style="font-size:16px;font-weight:600;letter-spacing:-0.015em;margin-top:8px;color:var(--foreground);">
             Phase G3 (Brgy. Yakal) &rarr; First City Providential College (FCPC)
           </h2>
-          <p id="active-route-meta" style="font-size:0.86rem;color:#DBEAFE;margin-top:3px;">
-            Via D. Silang St. &amp; Francisco Ave. • High-Ground Safe Corridor • Open 24/7 During Flood Alerts
+          <p id="active-route-meta" style="font-size:12.5px;color:var(--muted-foreground);margin-top:2px;">
+            Via D. Silang St. &amp; Francisco Ave. • Elevated Concrete Corridor • Primary Safe Zone
           </p>
         </div>
 
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1 1 auto;justify-content:flex-end;">
-          <div style="background:rgba(15,23,42,0.35);padding:8px 12px;border-radius:10px;text-align:center;flex:1 1 90px;">
-            <span style="font-size:0.7rem;color:#BFDBFE;display:block;">Distance</span>
-            <strong id="route-distance-val" class="mono" style="font-size:1rem;">620 m</strong>
+          <div style="background:var(--muted-surface);border:1px solid var(--border);padding:8px 14px;border-radius:var(--radius-inner);flex:1 1 90px;">
+            <span class="mono" style="font-size:10.5px;color:var(--subtle-foreground);text-transform:uppercase;display:block;">Distance</span>
+            <strong id="route-distance-val" class="mono tabular-nums" style="font-size:14px;color:var(--foreground);">620 m</strong>
           </div>
-          <div style="background:rgba(15,23,42,0.35);padding:8px 12px;border-radius:10px;text-align:center;flex:1 1 90px;">
-            <span style="font-size:0.7rem;color:#BFDBFE;display:block;">Walking ETA</span>
-            <strong id="route-eta-val" class="mono" style="font-size:1rem;">~7 mins</strong>
+          <div style="background:var(--muted-surface);border:1px solid var(--border);padding:8px 14px;border-radius:var(--radius-inner);flex:1 1 90px;">
+            <span class="mono" style="font-size:10.5px;color:var(--subtle-foreground);text-transform:uppercase;display:block;">Est. Walk</span>
+            <strong id="route-eta-val" class="mono tabular-nums" style="font-size:14px;color:var(--foreground);">7 min</strong>
           </div>
-          <button type="button" id="btn-locate-gps" class="btn" style="background:#FFFFFF;color:#1E3A8A;font-weight:800;flex:1 1 150px;">
-            📍 Locate Me (GPS)
+          <button type="button" id="btn-locate-gps" class="btn btn-primary" style="flex:1 1 150px;">
+            Locate GPS Origin
           </button>
         </div>
       </div>
-      <p id="gps-status-msg" style="font-size:0.78rem;color:#FEF08A;margin-top:8px;" class="hidden"></p>
+      <p id="gps-status-msg" class="mono hidden" style="font-size:11.5px;color:var(--muted-foreground);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"></p>
     </section>
 
     <div class="dashboard-grid">
-      <!-- Left Column: Interactive Leaflet Map -->
+      <!-- Left Pane: Leaflet Spatial View -->
       <div>
-        <section class="card" style="padding:14px;">
+        <section class="card" style="padding:12px;">
           <div id="evacuation-map" role="region" aria-label="Leaflet Evacuation Map of Francisco Homes, CSJDM, Bulacan"></div>
 
-          <div class="map-legend">
+          <div class="map-legend" style="padding:4px 4px 0 4px;">
             <span class="legend-item">
               <span class="legend-dot" style="background:#16A34A;"></span>
-              Primary Evacuation Hub (FCPC)
+              Primary Hub (FCPC)
             </span>
             <span class="legend-item">
-              <span class="legend-dot" style="background:#2563EB;"></span>
+              <span class="legend-dot" style="background:#1D4ED8;"></span>
               Barangay Shelters
             </span>
             <span class="legend-item">
               <span class="legend-dot" style="background:#DC2626;"></span>
-              ESP32 Sensor Node (Phase G3)
+              ESP32 Node (Phase G3)
             </span>
             <span class="legend-item">
-              <span class="legend-dot" style="background:#F59E0B;"></span>
-              Flood-Prone Creek Zone
+              <span class="legend-dot" style="background:#D97706;"></span>
+              Creek Hazard Basin
             </span>
           </div>
         </section>
       </div>
 
-      <!-- Right Column: Evacuation Centers & Turn-by-Turn Guide -->
+      <!-- Right Pane: Designated Shelters & Waypoints -->
       <div>
-        <section class="card" style="margin-bottom:16px;">
+        <section class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">🏫 Designated Safe Evacuation Centers</h3>
-              <p class="card-subtitle">Tap any shelter to focus map &amp; recalculate safe route</p>
+              <h3 class="card-title">Designated Evacuation Shelters</h3>
+              <p class="card-subtitle">Select facility to inspect capacity &amp; plot corridor</p>
             </div>
           </div>
 
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <!-- Shelter 1: FCPC -->
-            <button type="button" class="shelter-select-btn" data-shelter-id="fcpc" style="text-align:left;width:100%;background:var(--safe-soft);border:2px solid #16A34A;border-radius:var(--radius-md);padding:12px;cursor:pointer;">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <strong style="color:#14532D;font-size:0.92rem;">1. First City Providential College (FCPC)</strong>
-                <span class="mono" style="font-size:0.72rem;background:#16A34A;color:#FFF;padding:2px 8px;border-radius:999px;font-weight:700;">PRIMARY HUB</span>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button type="button" class="shelter-select-btn active-shelter" data-shelter-id="fcpc">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <strong style="color:var(--foreground);font-size:13.5px;">First City Providential College (FCPC)</strong>
+                <span class="status-badge-inline">PRIMARY</span>
               </div>
-              <p style="font-size:0.8rem;color:#166534;margin-top:4px;">
-                Brgy. Narra, Francisco Homes Subd., CSJDM • Multi-story concrete campus, Medical Station
+              <p style="font-size:12px;color:var(--muted-foreground);margin-top:4px;">
+                Brgy. Narra, Francisco Homes Subd. • Multi-story concrete campus, Medical Triage
               </p>
-              <div class="mono" style="font-size:0.75rem;color:#14532D;margin-top:6px;font-weight:700;">
-                Capacity: 142 / 650 Evacuees • Distance: 620 m (~7 mins walk)
+              <div class="mono tabular-nums" style="font-size:11.5px;color:var(--foreground);margin-top:8px;font-weight:500;">
+                Occupancy: 142 / 650 • Distance: 620 m (7 min)
               </div>
             </button>
 
-            <!-- Shelter 2: Brgy. Narra Covered Court -->
-            <button type="button" class="shelter-select-btn" data-shelter-id="narra_hall" style="text-align:left;width:100%;background:var(--bg-subtle);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px;cursor:pointer;">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <strong style="color:var(--text-primary);font-size:0.92rem;">2. Brgy. Narra Multi-Purpose Covered Court</strong>
-                <span class="mono" style="font-size:0.72rem;background:#2563EB;color:#FFF;padding:2px 8px;border-radius:999px;font-weight:700;">OPEN</span>
+            <button type="button" class="shelter-select-btn" data-shelter-id="narra_hall">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <strong style="color:var(--foreground);font-size:13.5px;">Brgy. Narra Multi-Purpose Covered Court</strong>
+                <span class="status-label">SECONDARY</span>
               </div>
-              <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">
-                Francisco Ave., Brgy. Narra, CSJDM • Barangay DRRM Command Post &amp; Relief Hub
+              <p style="font-size:12px;color:var(--muted-foreground);margin-top:4px;">
+                Francisco Ave., Brgy. Narra • Barangay DRRM Command Post &amp; Relief Staging
               </p>
-              <div class="mono" style="font-size:0.75rem;color:var(--brand-primary);margin-top:6px;font-weight:700;">
-                Capacity: 68 / 250 Evacuees • Distance: 480 m (~5 mins walk)
+              <div class="mono tabular-nums" style="font-size:11.5px;color:var(--foreground);margin-top:8px;font-weight:500;">
+                Occupancy: 68 / 250 • Distance: 480 m (5 min)
               </div>
             </button>
 
-            <!-- Shelter 3: Brgy. Yakal Evacuation Center -->
-            <button type="button" class="shelter-select-btn" data-shelter-id="yakal_hub" style="text-align:left;width:100%;background:var(--bg-subtle);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px;cursor:pointer;">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <strong style="color:var(--text-primary);font-size:0.92rem;">3. Brgy. Yakal Community Evacuation Center</strong>
-                <span class="mono" style="font-size:0.72rem;background:#2563EB;color:#FFF;padding:2px 8px;border-radius:999px;font-weight:700;">OPEN</span>
+            <button type="button" class="shelter-select-btn" data-shelter-id="yakal_hub">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <strong style="color:var(--foreground);font-size:13.5px;">Brgy. Yakal Community Evacuation Center</strong>
+                <span class="status-label">SECONDARY</span>
               </div>
-              <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">
-                Francisco Homes 1, Brgy. Yakal, CSJDM • Secondary Elevated Shelter
+              <p style="font-size:12px;color:var(--muted-foreground);margin-top:4px;">
+                Francisco Homes 1, Brgy. Yakal • Elevated Barangay Shelter Facility
               </p>
-              <div class="mono" style="font-size:0.75rem;color:var(--brand-primary);margin-top:6px;font-weight:700;">
-                Capacity: 54 / 200 Evacuees • Distance: 510 m (~6 mins walk)
+              <div class="mono tabular-nums" style="font-size:11.5px;color:var(--foreground);margin-top:8px;font-weight:500;">
+                Occupancy: 54 / 200 • Distance: 510 m (6 min)
               </div>
             </button>
           </div>
         </section>
 
-        <!-- Turn-by-Turn Pedestrian Guidance -->
         <section class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">🧭 Step-by-Step Safe Evacuation Directions</h3>
-              <p class="card-subtitle">Avoids low-lying creek overflow channels</p>
+              <h3 class="card-title">Corridor Waypoints</h3>
+              <p class="card-subtitle">Pedestrian routing clear of creek overflow zones</p>
             </div>
           </div>
-          <ol id="turn-by-turn-list" style="padding-left:18px;font-size:0.84rem;color:var(--text-secondary);display:flex;flex-direction:column;gap:8px;">
-            <li><strong>Start at Phase G3 (Sunga Residence, Brgy. Yakal):</strong> Exit away from the low-lying waterway channel toward the paved internal road.</li>
-            <li><strong>Head North-East to D. Silang St. (180 m):</strong> Stay on the elevated sidewalk; avoid underpass drainage grates.</li>
-            <li><strong>Turn Right onto Francisco Ave. toward Brgy. Narra (290 m):</strong> Follow Barangay DRRM directional markers.</li>
-            <li><strong>Arrive at First City Providential College (FCPC) Main Gate (150 m):</strong> Register at the Ground Floor Triage Desk and proceed to the designated classroom shelter.</li>
+          <ol id="turn-by-turn-list" style="padding-left:18px;font-size:12.5px;color:var(--muted-foreground);display:flex;flex-direction:column;gap:8px;">
+            <li><strong style="color:var(--foreground);">Phase G3 Origin (Sunga Residence, Brgy. Yakal):</strong> Proceed away from the waterway culvert toward the paved collector street.</li>
+            <li><strong style="color:var(--foreground);">D. Silang St. Segment (180 m):</strong> Maintain elevated sidewalk trajectory north-east.</li>
+            <li><strong style="color:var(--foreground);">Francisco Ave. Segment (290 m):</strong> Turn right toward Brgy. Narra commercial spine.</li>
+            <li><strong style="color:var(--foreground);">FCPC Main Gate Arrival (150 m):</strong> Check in at the Ground Floor Triage Desk.</li>
           </ol>
         </section>
       </div>
     </div>
   </main>
 
-  <!-- Offline Notification Center Drawer -->
-  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-label="Offline Flood Alert Log">
+  <!-- Offline Telemetry Event Drawer -->
+  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
     <div class="drawer-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border);">
         <div>
-          <h3 style="font-size:1.05rem;font-weight:800;">🔔 Offline Flood Alert Log</h3>
-          <p style="font-size:0.75rem;color:var(--text-muted);">Stored locally on device</p>
+          <h3 id="drawer-title" style="font-size:14px;font-weight:600;">Offline Telemetry Event Log</h3>
+          <p style="font-size:12px;color:var(--subtle-foreground);">Persisted in local storage</p>
         </div>
-        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Alert Drawer">✕</button>
+        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Event Drawer">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
       <div id="notif-drawer-list" class="notif-list"></div>
-      <div style="padding-top:12px;border-top:1px solid var(--border-subtle);">
-        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Log</button>
+      <div style="padding-top:12px;border-top:1px solid var(--border);">
+        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Event Log</button>
       </div>
     </div>
   </div>
 
-  <!-- Unified Bottom Navigation Bar -->
-  <nav class="bottom-nav" aria-label="Primary Navigation">
+  <!-- Anchored Mobile Bottom Navigation (< 768px) -->
+  <nav class="bottom-nav" aria-label="Mobile Navigation">
     <div class="bottom-nav-inner">
       <a href="index.html" class="nav-item">
-        <span class="nav-icon">🏠</span>
-        <span>Dashboard</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <span>Telemetry</span>
       </a>
       <a href="evacuation.html" class="nav-item active" aria-current="page">
-        <span class="nav-icon">🗺️</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
         <span>Evac Map</span>
       </a>
       <a href="emergency.html" class="nav-item">
-        <span class="nav-icon">🚨</span>
-        <span>Emergency</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>SOS Alert</span>
       </a>
       <a href="feedback.html" class="nav-item">
-        <span class="nav-icon">💬</span>
-        <span>Feedback</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>Reports</span>
       </a>
     </div>
   </nav>
@@ -220,20 +240,19 @@
     document.addEventListener('DOMContentLoaded', () => {
       const state = loadState();
 
-      // Key Coordinates in Francisco Homes, City of San Jose del Monte, Bulacan (Chapter 3 Locales)
       const COORDS = {
-        sungaSensor: [14.8118, 121.0562], // Phase G3, Francisco Homes 1, Brgy. Yakal (Sunga Residence / Sensor Node)
-        fcpc:        [14.8143, 121.0598], // First City Providential College, Brgy. Narra, Francisco Homes
-        narraHall:   [14.8154, 121.0576], // Brgy. Narra Multi-Purpose Covered Court
-        yakalHub:    [14.8105, 121.0609]  // Brgy. Yakal Community Evacuation Center
+        sungaSensor: [14.8118, 121.0562],
+        fcpc:        [14.8143, 121.0598],
+        narraHall:   [14.8154, 121.0576],
+        yakalHub:    [14.8105, 121.0609]
       };
 
       const ROUTES = {
         fcpc: {
           title: 'Phase G3 (Brgy. Yakal) → First City Providential College (FCPC)',
-          meta: 'Via D. Silang St. & Francisco Ave. • High-Ground Safe Corridor • Primary Hub',
+          meta: 'Via D. Silang St. & Francisco Ave. • Elevated Concrete Corridor • Primary Safe Zone',
           distance: '620 m',
-          eta: '~7 mins',
+          eta: '7 min',
           path: [
             [14.8118, 121.0562],
             [14.8127, 121.0568],
@@ -242,17 +261,17 @@
             [14.8143, 121.0598]
           ],
           steps: [
-            '<strong>Start at Phase G3 (Sunga Residence, Brgy. Yakal):</strong> Exit away from the low-lying waterway channel toward the paved internal road.',
-            '<strong>Head North-East to D. Silang St. (180 m):</strong> Stay on the elevated sidewalk; avoid underpass drainage grates.',
-            '<strong>Turn Right onto Francisco Ave. toward Brgy. Narra (290 m):</strong> Follow Barangay DRRM directional markers.',
-            '<strong>Arrive at First City Providential College (FCPC) Main Gate (150 m):</strong> Register at the Ground Floor Triage Desk and proceed to the designated classroom shelter.'
+            '<strong style="color:var(--foreground);">Phase G3 Origin (Sunga Residence, Brgy. Yakal):</strong> Proceed away from the waterway culvert toward the paved collector street.',
+            '<strong style="color:var(--foreground);">D. Silang St. Segment (180 m):</strong> Maintain elevated sidewalk trajectory north-east.',
+            '<strong style="color:var(--foreground);">Francisco Ave. Segment (290 m):</strong> Turn right toward Brgy. Narra commercial spine.',
+            '<strong style="color:var(--foreground);">FCPC Main Gate Arrival (150 m):</strong> Check in at the Ground Floor Triage Desk.'
           ]
         },
         narra_hall: {
           title: 'Phase G3 (Brgy. Yakal) → Brgy. Narra Multi-Purpose Covered Court',
           meta: 'Via Pioneer St. & Francisco Ave. • Barangay DRRM Command Post',
           distance: '480 m',
-          eta: '~5 mins',
+          eta: '5 min',
           path: [
             [14.8118, 121.0562],
             [14.8131, 121.0565],
@@ -260,16 +279,16 @@
             [14.8154, 121.0576]
           ],
           steps: [
-            '<strong>Start at Phase G3 (Brgy. Yakal):</strong> Proceed north along the residential collector street.',
-            '<strong>Cross onto Pioneer St. / D. Silang St. (210 m):</strong> Keep to high ground.',
-            '<strong>Arrive at Brgy. Narra Multi-Purpose Covered Court (270 m):</strong> Check in with Barangay Emergency Response officials.'
+            '<strong style="color:var(--foreground);">Phase G3 Origin (Brgy. Yakal):</strong> Head north along the residential collector street.',
+            '<strong style="color:var(--foreground);">Pioneer St. / D. Silang St. (210 m):</strong> Keep to high ground.',
+            '<strong style="color:var(--foreground);">Brgy. Narra Covered Court (270 m):</strong> Register with Barangay DRRM officials.'
           ]
         },
         yakal_hub: {
           title: 'Phase G3 (Brgy. Yakal) → Brgy. Yakal Community Evacuation Center',
           meta: 'Via Phase G3 Collector Road • Secondary Elevated Shelter',
           distance: '510 m',
-          eta: '~6 mins',
+          eta: '6 min',
           path: [
             [14.8118, 121.0562],
             [14.8113, 121.0579],
@@ -277,9 +296,9 @@
             [14.8105, 121.0609]
           ],
           steps: [
-            '<strong>Start at Phase G3 (Brgy. Yakal):</strong> Head east along the Phase G3 main residential road.',
-            '<strong>Continue straight past the village junction (310 m):</strong> Stay clear of creekside culverts.',
-            '<strong>Arrive at Brgy. Yakal Community Evacuation Center (200 m):</strong> Proceed to the second-level shelter hall.'
+            '<strong style="color:var(--foreground);">Phase G3 Origin (Brgy. Yakal):</strong> Head east along the Phase G3 collector road.',
+            '<strong style="color:var(--foreground);">Village Junction (310 m):</strong> Stay clear of creekside culverts.',
+            '<strong style="color:var(--foreground);">Brgy. Yakal Evacuation Center (200 m):</strong> Proceed to the second-level shelter hall.'
           ]
         }
       };
@@ -292,16 +311,16 @@
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors • Whaze FCPC CSJDM GIS'
+        attribution: '&copy; OpenStreetMap • Whaze FCPC GIS'
       }).addTo(map);
 
-      // Custom HTML Badge Icons for clear visual distinction
-      function createBadgeIcon(bgColor, emoji, labelText) {
+      // Clean Engineered Map Badges (Dot + Monospace/Sans Tag — Zero Emoji Slop)
+      function createBadgeIcon(dotColor, labelText) {
         return L.divIcon({
           className: 'custom-leaflet-pin',
           html: `
-            <div style="display:inline-flex;align-items:center;gap:5px;background:${bgColor};color:#FFF;padding:5px 10px;border-radius:999px;font-weight:800;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.3);border:2px solid #FFF;white-space:nowrap;transform:translate(-50%,-50%);">
-              <span>${emoji}</span>
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#09090B;color:#FAFAFA;padding:4px 9px;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;font-size:11.5px;box-shadow:0 4px 12px rgba(0,0,0,0.22);border:1px solid #27272A;white-space:nowrap;transform:translate(-50%,-50%);">
+              <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0;"></span>
               <span>${labelText}</span>
             </div>
           `,
@@ -309,76 +328,78 @@
         });
       }
 
-      // 1. Primary Evacuation Center Marker: First City Providential College (FCPC)
       const fcpcMarker = L.marker(COORDS.fcpc, {
-        icon: createBadgeIcon('#15803D', '🏫', 'FCPC Evacuation Hub')
+        icon: createBadgeIcon('#22C55E', 'FCPC Primary Hub')
       }).addTo(map);
       fcpcMarker.bindPopup(`
-        <div style="min-width:210px;">
-          <strong style="color:#15803D;font-size:14px;">🏫 First City Providential College (FCPC)</strong>
-          <p style="margin:4px 0;font-size:12px;color:#334155;">Brgy. Narra, Francisco Homes Subd., City of San Jose del Monte, Bulacan</p>
-          <p style="margin:4px 0;font-size:12px;"><strong>Status:</strong> <span style="color:#15803D;font-weight:700;">OPEN (Primary Safe Zone)</span></p>
-          <p style="margin:4px 0;font-size:12px;"><strong>Occupancy:</strong> 142 / 650 Evacuees</p>
+        <div style="min-width:200px;font-family:'Inter',sans-serif;">
+          <strong style="color:#09090B;font-size:13px;">First City Providential College (FCPC)</strong>
+          <p style="margin:4px 0;font-size:11.5px;color:#52525B;">Brgy. Narra, Francisco Homes Subd., CSJDM, Bulacan</p>
+          <p style="margin:4px 0;font-size:11.5px;font-family:'JetBrains Mono',monospace;"><strong>Status:</strong> OPEN (Primary Hub)</p>
+          <p style="margin:4px 0;font-size:11.5px;font-family:'JetBrains Mono',monospace;"><strong>Occupancy:</strong> 142 / 650</p>
         </div>
       `);
 
-      // 2. Sensor Node Marker: Sunga Residence (Phase G3, Francisco Homes 1, Brgy. Yakal)
-      const sensorColor = state.status === 'CRITICAL' ? '#DC2626' : state.status === 'WARNING' ? '#D97706' : '#0284C7';
+      const sensorColor = state.status === 'CRITICAL' ? '#EF4444' : state.status === 'WARNING' ? '#F59E0B' : '#38BDF8';
       const sensorMarker = L.marker(COORDS.sungaSensor, {
-        icon: createBadgeIcon(sensorColor, '📡', `ESP32 Node (${Number(state.waterLevelCm).toFixed(1)} cm)`)
+        icon: createBadgeIcon(sensorColor, `ESP32-G3 (${Number(state.waterLevelCm).toFixed(1)} cm)`)
       }).addTo(map);
       sensorMarker.bindPopup(`
-        <div style="min-width:210px;">
-          <strong style="color:${sensorColor};font-size:14px;">📡 Sunga Residence (ESP32 Sensor Node)</strong>
-          <p style="margin:4px 0;font-size:12px;color:#334155;">Phase G3, Francisco Homes 1, Brgy. Yakal, CSJDM, Bulacan</p>
-          <p style="margin:4px 0;font-size:12px;"><strong>Live Water Level:</strong> ${Number(state.waterLevelCm).toFixed(1)} cm (${state.status})</p>
-          <p style="margin:4px 0;font-size:12px;"><strong>Ultrasonic Distance:</strong> ${Number(state.sensorDistanceCm).toFixed(1)} cm</p>
+        <div style="min-width:200px;font-family:'Inter',sans-serif;">
+          <strong style="color:#09090B;font-size:13px;">Sunga Residence (ESP32-FCPC-G3)</strong>
+          <p style="margin:4px 0;font-size:11.5px;color:#52525B;">Phase G3, Francisco Homes 1, Brgy. Yakal, CSJDM</p>
+          <p style="margin:4px 0;font-size:11.5px;font-family:'JetBrains Mono',monospace;"><strong>Water Level:</strong> ${Number(state.waterLevelCm).toFixed(1)} cm (${state.status})</p>
+          <p style="margin:4px 0;font-size:11.5px;font-family:'JetBrains Mono',monospace;"><strong>Sensor Dist:</strong> ${Number(state.sensorDistanceCm).toFixed(1)} cm</p>
         </div>
       `);
 
-      // 3. Secondary Barangay Shelters
       const narraMarker = L.marker(COORDS.narraHall, {
-        icon: createBadgeIcon('#1D4ED8', '🏛️', 'Brgy. Narra Court')
+        icon: createBadgeIcon('#3B82F6', 'Brgy. Narra Court')
       }).addTo(map).bindPopup(`
-        <strong>🏛️ Brgy. Narra Multi-Purpose Covered Court</strong><br>
-        <span style="font-size:12px;">Francisco Ave., Brgy. Narra • Capacity: 68 / 250</span>
+        <div style="font-family:'Inter',sans-serif;">
+          <strong style="font-size:12.5px;">Brgy. Narra Multi-Purpose Covered Court</strong><br>
+          <span style="font-size:11.5px;color:#52525B;">Francisco Ave., Brgy. Narra • Occupancy: 68 / 250</span>
+        </div>
       `);
 
       const yakalMarker = L.marker(COORDS.yakalHub, {
-        icon: createBadgeIcon('#1D4ED8', '🏛️', 'Brgy. Yakal Center')
+        icon: createBadgeIcon('#3B82F6', 'Brgy. Yakal Center')
       }).addTo(map).bindPopup(`
-        <strong>🏛️ Brgy. Yakal Community Evacuation Center</strong><br>
-        <span style="font-size:12px;">Francisco Homes 1, Brgy. Yakal • Capacity: 54 / 200</span>
+        <div style="font-family:'Inter',sans-serif;">
+          <strong style="font-size:12.5px;">Brgy. Yakal Community Evacuation Center</strong><br>
+          <span style="font-size:11.5px;color:#52525B;">Francisco Homes 1, Brgy. Yakal • Occupancy: 54 / 200</span>
+        </div>
       `);
 
-      // 4. Low-Lying Flood Hazard Zone Circle near Creek Channel
       const hazardCircle = L.circle([14.8112, 121.0554], {
-        color: state.status === 'CRITICAL' ? '#DC2626' : '#F59E0B',
-        fillColor: state.status === 'CRITICAL' ? '#EF4444' : '#FBBF24',
-        fillOpacity: 0.28,
+        color: state.status === 'CRITICAL' ? '#DC2626' : '#D97706',
+        weight: 1.5,
+        fillColor: state.status === 'CRITICAL' ? '#EF4444' : '#F59E0B',
+        fillOpacity: 0.22,
         radius: 135
       }).addTo(map);
       hazardCircle.bindPopup(`
-        <strong>⚠️ Low-Lying Creek Flood Watch Zone</strong><br>
-        <span style="font-size:12px;">Water Level: ${Number(state.waterLevelCm).toFixed(1)} cm • Avoid low-lying creekside paths during heavy rain.</span>
+        <div style="font-family:'Inter',sans-serif;">
+          <strong style="font-size:12.5px;">Low-Lying Creek Basin</strong><br>
+          <span style="font-size:11.5px;color:#52525B;">Current Depth: ${Number(state.waterLevelCm).toFixed(1)} cm. Avoid low creekside paths during heavy rain.</span>
+        </div>
       `);
 
-      // 5. Active Safe Evacuation Route Polyline
       let routeLine = L.polyline(ROUTES.fcpc.path, {
-        color: '#16A34A',
-        weight: 6,
+        color: '#09090B',
+        weight: 4,
         opacity: 0.9,
-        dashArray: '10, 6'
+        dashArray: '8, 6'
       }).addTo(map);
 
       function selectRoute(shelterKey) {
         const r = ROUTES[shelterKey] || ROUTES.fcpc;
         if (routeLine) map.removeLayer(routeLine);
         routeLine = L.polyline(r.path, {
-          color: shelterKey === 'fcpc' ? '#16A34A' : '#2563EB',
-          weight: 6,
-          opacity: 0.92,
-          dashArray: '10, 6'
+          color: shelterKey === 'fcpc' ? '#09090B' : '#1D4ED8',
+          weight: 4,
+          opacity: 0.9,
+          dashArray: '8, 6'
         }).addTo(map);
 
         map.fitBounds(routeLine.getBounds(), { padding: [45, 45] });
@@ -391,8 +412,7 @@
 
         document.querySelectorAll('.shelter-select-btn').forEach((btn) => {
           const isMatch = btn.getAttribute('data-shelter-id') === shelterKey;
-          btn.style.border = isMatch ? '2px solid #16A34A' : '1px solid var(--border-color)';
-          btn.style.background = isMatch ? 'var(--safe-soft)' : 'var(--bg-subtle)';
+          btn.classList.toggle('active-shelter', isMatch);
         });
 
         if (shelterKey === 'fcpc') fcpcMarker.openPopup();
@@ -406,7 +426,6 @@
         });
       });
 
-      // GPS Locate Me with graceful fallback to Phase G3 Locale
       const locateBtn = document.getElementById('btn-locate-gps');
       const gpsMsg = document.getElementById('gps-status-msg');
       let userGpsMarker = null;
@@ -415,11 +434,11 @@
         locateBtn.addEventListener('click', () => {
           if (gpsMsg) {
             gpsMsg.classList.remove('hidden');
-            gpsMsg.textContent = 'Acquiring GPS position...';
+            gpsMsg.textContent = 'Acquiring GPS coordinates...';
           }
           if (!navigator.geolocation) {
             if (gpsMsg) {
-              gpsMsg.textContent = 'ℹ️ Geolocation unavailable. Centered on Phase G3 Sunga Residence → FCPC safe route.';
+              gpsMsg.textContent = 'Geolocation unavailable. Centered on Phase G3 Sunga Residence → FCPC corridor.';
             }
             selectRoute('fcpc');
             return;
@@ -429,16 +448,16 @@
               const { latitude, longitude } = pos.coords;
               if (userGpsMarker) map.removeLayer(userGpsMarker);
               userGpsMarker = L.marker([latitude, longitude], {
-                icon: createBadgeIcon('#7C3AED', '📍', 'Your Location')
+                icon: createBadgeIcon('#A855F7', 'GPS Position')
               }).addTo(map);
               if (gpsMsg) {
-                gpsMsg.textContent = `✅ GPS locked (${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E). Showing safe corridor to FCPC.`;
+                gpsMsg.textContent = `GPS locked (${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E). Plotting corridor to FCPC.`;
               }
               map.fitBounds(routeLine.getBounds(), { padding: [45, 45] });
             },
             () => {
               if (gpsMsg) {
-                gpsMsg.textContent = 'ℹ️ GPS permission declined or offline — using Phase G3 (Brgy. Yakal) locale origin to FCPC.';
+                gpsMsg.textContent = 'GPS permission declined or offline — using Phase G3 (Brgy. Yakal) locale origin.';
               }
               selectRoute('fcpc');
             },
@@ -447,7 +466,6 @@
         });
       }
 
-      // Self-heal Leaflet tile sizing after DOM paint & viewport resize
       setTimeout(() => {
         map.invalidateSize();
         map.fitBounds(routeLine.getBounds(), { padding: [45, 45] });

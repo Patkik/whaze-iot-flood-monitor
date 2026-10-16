@@ -4,60 +4,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1D4ED8">
+  <meta name="theme-color" content="#09090B">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="assets/logo.png">
-  <title>Emergency SOS &amp; Preparedness — Whaze Flood EWS</title>
+  <title>SOS &amp; Emergency Dispatch — Whaze Flood EWS</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <main class="app-container">
+  <main id="main-content" class="app-container">
     <!-- Top Header -->
     <header class="top-header">
       <div class="header-left">
-        <a href="index.html" class="icon-btn" aria-label="Back to Dashboard" style="text-decoration:none;">←</a>
+        <a href="index.html" class="icon-btn" aria-label="Back to Telemetry">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
         <img src="assets/logo.png" alt="Whaze Logo" class="header-logo">
         <div class="brand-titles">
-          <h1>Emergency SOS &amp; Hotlines</h1>
-          <p class="brand-subtitle">RA 10639 Disaster Alert &amp; CSJDM Rescue Dispatch</p>
+          <h1>SOS &amp; Emergency Dispatch</h1>
+          <p class="brand-subtitle">RA 10639 Alert Broadcast &amp; CSJDM Rescue Directory</p>
         </div>
       </div>
 
+      <nav class="desktop-nav" aria-label="Desktop Navigation">
+        <a href="index.html">Telemetry</a>
+        <a href="evacuation.html">Evacuation GIS</a>
+        <a href="emergency.html" class="active" aria-current="page">SOS &amp; Dispatch</a>
+        <a href="feedback.html">Field Reports</a>
+      </nav>
+
       <div class="header-actions">
         <div id="connection-mode-pill" class="connection-pill">
-          <span class="dot"></span>
+          <span class="dot" aria-hidden="true"></span>
           <span id="connection-mode-text">Simulated Mode</span>
         </div>
-        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Offline Alert Log">
-          🔔
+        <button id="open-notif-drawer-btn" class="icon-btn" aria-label="Open Event Log">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
           <span id="notif-badge-count" class="badge-count">1</span>
         </button>
       </div>
     </header>
 
     <div class="dashboard-grid">
-      <!-- Left Column: One-Tap SOS Broadcast & Local Siren -->
+      <!-- Left Pane: Acoustic Siren + One-Tap SOS Broadcast -->
       <div>
-        <!-- Audible Local Siren Card -->
-        <section class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#7F1D1D,#991B1B);color:#FFFFFF;border:none;">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div>
-              <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;background:rgba(255,255,255,0.2);padding:3px 9px;border-radius:999px;">
-                Local Acoustic Alert (Piezo / Siren)
-              </span>
-              <h2 style="font-size:1.25rem;font-weight:800;margin-top:6px;">🔊 Household &amp; Responder Siren</h2>
-              <p style="font-size:0.84rem;color:#FECACA;margin-top:2px;">
-                Emit high-decibel alternating acoustic tone to alert household members or nearby rescue teams.
+        <!-- Local Acoustic Siren Control Card -->
+        <section class="card" style="margin-bottom:16px;border-top:3px solid var(--status-crit-dot);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div style="flex:1 1 240px;">
+              <span class="status-label">Local Acoustic Output (880 / 1320 Hz)</span>
+              <h2 style="font-size:16px;font-weight:600;letter-spacing:-0.015em;margin-top:8px;color:var(--foreground);">
+                Household &amp; Responder Siren
+              </h2>
+              <p style="font-size:12.5px;color:var(--muted-foreground);margin-top:2px;">
+                Emit alternating acoustic signal to alert household members or nearby barangay rescue teams.
               </p>
             </div>
-            <button type="button" id="btn-toggle-siren" class="btn" style="background:#FFFFFF;color:#991B1B;font-weight:800;flex:1 1 160px;">
-              🔊 Activate Siren
+            <button type="button" id="btn-toggle-siren" class="btn btn-danger" style="flex:1 1 160px;">
+              Activate Siren
             </button>
           </div>
         </section>
@@ -66,116 +80,115 @@
         <section class="card" style="margin-bottom:16px;">
           <div class="card-header">
             <div>
-              <h3 class="card-title">🚨 Send Emergency Flood SOS Alert</h3>
-              <p class="card-subtitle">Broadcasts household location, current ESP32 water level, &amp; rescue priority (RA 10639)</p>
+              <h3 class="card-title">Emergency Flood SOS Dispatch</h3>
+              <p class="card-subtitle">Transmits household zone, synced ESP32 water level, &amp; triage priority (RA 10639)</p>
             </div>
           </div>
 
           <form id="sos-broadcast-form">
             <div class="form-row cols-2">
               <div>
-                <label for="sos-zone" class="field-label">Location / Barangay Zone</label>
+                <label for="sos-zone" class="field-label">Location / Barangay Sector</label>
                 <select id="sos-zone" class="input-control" required>
                   <option value="Phase G3, Francisco Homes 1, Brgy. Yakal, CSJDM">Phase G3, Francisco Homes 1, Brgy. Yakal</option>
                   <option value="Brgy. Narra (Near First City Providential College)">Brgy. Narra (Near FCPC Campus)</option>
-                  <option value="Francisco Ave. / D. Silang St. Low-Lying Zone">Francisco Ave. / D. Silang St. Zone</option>
-                  <option value="Creek-Adjacent Residential Block, CSJDM">Creek-Adjacent Residential Block</option>
+                  <option value="Francisco Ave. / D. Silang St. Low-Lying Zone">Francisco Ave. / D. Silang St. Sector</option>
+                  <option value="Creek-Adjacent Residential Block, CSJDM">Creek-Adjacent Residential Sector</option>
                 </select>
               </div>
               <div>
-                <label for="sos-household-count" class="field-label">Household Members / Evacuees</label>
-                <input type="number" id="sos-household-count" class="input-control mono" min="1" max="30" value="4" required>
+                <label for="sos-household-count" class="field-label">Household Headcount</label>
+                <input type="number" id="sos-household-count" class="input-control mono tabular-nums" min="1" max="30" value="4" required>
               </div>
             </div>
 
             <div class="form-row cols-2">
               <div>
-                <label for="sos-urgency" class="field-label">Emergency Assistance Needed</label>
+                <label for="sos-urgency" class="field-label">Triage Priority</label>
                 <select id="sos-urgency" class="input-control" required>
-                  <option value="URGENT EVACUATION / RISING FLOODWATER">🚨 Urgent Evacuation / Rising Floodwater</option>
-                  <option value="SENIOR CITIZEN / PWD / CHILD EXTRACT">🧓 Senior Citizen / PWD / Child Assistance</option>
-                  <option value="MEDICAL FIRST AID NEEDED">🏥 Medical / First Aid Emergency</option>
-                  <option value="SAFE AT FCPC EVACUATION CENTER">✅ Checked In Safe at FCPC Evacuation Hub</option>
+                  <option value="URGENT EVACUATION / RISING FLOODWATER">Priority 1 — Urgent Evacuation / Rising Water</option>
+                  <option value="SENIOR CITIZEN / PWD / CHILD EXTRACT">Priority 2 — Senior / PWD / Child Extraction</option>
+                  <option value="MEDICAL FIRST AID NEEDED">Priority 3 — Medical / First-Aid Assistance</option>
+                  <option value="SAFE AT FCPC EVACUATION CENTER">Status Check — Checked In Safe at FCPC Hub</option>
                 </select>
               </div>
               <div>
-                <label for="sos-water-level" class="field-label">Synced ESP32 Water Level</label>
-                <input type="text" id="sos-water-level" class="input-control mono" value="12.0 cm (SAFE)" readonly>
+                <label for="sos-water-level" class="field-label">Synced ESP32 Depth</label>
+                <input type="text" id="sos-water-level" class="input-control mono tabular-nums" value="12.0 cm (SAFE)" readonly>
               </div>
             </div>
 
-            <div style="margin-bottom:14px;">
-              <label for="sos-notes" class="field-label">Landmark / Additional Details</label>
-              <input type="text" id="sos-notes" class="input-control" placeholder="e.g., Green gate near Phase G3 corner, 2nd floor waiting for rescue">
+            <div style="margin-bottom:16px;">
+              <label for="sos-notes" class="field-label">Structural Landmark / Access Notes</label>
+              <input type="text" id="sos-notes" class="input-control" placeholder="e.g., Phase G3 corner residence, 2nd floor awaiting boat team">
             </div>
 
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button type="submit" class="btn btn-danger" style="flex:1.2;">
-                🚨 Broadcast Emergency SOS Now
+                Broadcast SOS Dispatch
               </button>
-              <a id="sos-sms-link" href="sms:09171234567?body=WHAZE%20SOS%20FLOOD%20ALERT" class="btn btn-primary" style="flex:1;text-align:center;">
-                📱 Send via Cellular SMS
+              <a id="sos-sms-link" href="sms:09171234567?body=WHAZE%20SOS%20FLOOD%20ALERT" class="btn btn-secondary" style="flex:1;">
+                Send Cellular SMS
               </a>
             </div>
           </form>
 
-          <p id="sos-feedback-banner" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--safe-soft);color:#14532D;font-size:0.84rem;font-weight:700;"></p>
+          <p id="sos-feedback-banner" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:var(--radius-control);background:var(--status-safe-bg);border:1px solid var(--status-safe-border);color:var(--status-safe-fg);font-size:12.5px;font-weight:500;"></p>
         </section>
 
         <!-- Offline SOS Dispatch Log -->
         <section class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">📋 Recent SOS Dispatches (Offline Queue)</h3>
-              <p class="card-subtitle">Saved locally on device for responder verification</p>
+              <h3 class="card-title">Local SOS Dispatch Queue</h3>
+              <p class="card-subtitle">Cached on device for responder verification during network outages</p>
             </div>
           </div>
           <div id="sos-dispatch-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         </section>
       </div>
 
-      <!-- Right Column: CSJDM Hotlines & Safety Evacuation Checklist -->
+      <!-- Right Pane: Emergency Hotlines & Evacuation Readiness Checklist -->
       <div>
-        <!-- Direct Emergency Hotlines -->
         <section class="card" style="margin-bottom:16px;">
           <div class="card-header">
             <div>
-              <h3 class="card-title">📞 CSJDM &amp; Bulacan Emergency Hotlines</h3>
-              <p class="card-subtitle">One-tap direct cellular call to local disaster response units</p>
+              <h3 class="card-title">CSJDM &amp; Bulacan Emergency Directory</h3>
+              <p class="card-subtitle">Direct cellular dispatch lines</p>
             </div>
           </div>
 
-          <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
             <a href="tel:911" class="menu-card" style="margin-bottom:0;">
               <div>
-                <h4>🇵🇭 National Emergency Hotline (911)</h4>
-                <p>24/7 Nationwide Rescue &amp; Disaster Dispatch</p>
+                <h4>National Emergency Hotline</h4>
+                <p>24/7 Nationwide Rescue &amp; Disaster Command</p>
               </div>
-              <span class="btn btn-danger mono" style="padding:6px 12px;font-size:0.8rem;">📞 911</span>
+              <span class="btn btn-danger mono tabular-nums" style="padding:6px 12px;font-size:12px;min-height:32px;">911</span>
             </a>
 
             <a href="tel:+63448152142" class="menu-card" style="margin-bottom:0;">
               <div>
-                <h4>🛟 CSJDM CDRRMO (Rescue &amp; Flood Control)</h4>
+                <h4>CSJDM CDRRMO (Flood &amp; Rescue)</h4>
                 <p>City of San Jose del Monte Disaster Risk Reduction Office</p>
               </div>
-              <span class="btn btn-primary mono" style="padding:6px 12px;font-size:0.8rem;">📞 Call</span>
+              <span class="btn btn-secondary mono tabular-nums" style="padding:6px 12px;font-size:12px;min-height:32px;">(044) 815-2142</span>
             </a>
 
             <a href="tel:+63448150764" class="menu-card" style="margin-bottom:0;">
               <div>
-                <h4>🏫 First City Providential College (FCPC Hub)</h4>
+                <h4>First City Providential College (FCPC Hub)</h4>
                 <p>Brgy. Narra, Francisco Homes — Primary Evacuation Center</p>
               </div>
-              <span class="btn btn-primary mono" style="padding:6px 12px;font-size:0.8rem;">📞 Call</span>
+              <span class="btn btn-secondary mono tabular-nums" style="padding:6px 12px;font-size:12px;min-height:32px;">(044) 815-0764</span>
             </a>
 
             <a href="tel:143" class="menu-card" style="margin-bottom:0;">
               <div>
-                <h4>🏥 Philippine Red Cross — Bulacan Chapter</h4>
-                <p>Emergency Medical Services &amp; Flood Relief</p>
+                <h4>Philippine Red Cross — Bulacan</h4>
+                <p>Emergency Medical Services &amp; Relief Operations</p>
               </div>
-              <span class="btn btn-secondary mono" style="padding:6px 12px;font-size:0.8rem;">📞 143</span>
+              <span class="btn btn-secondary mono tabular-nums" style="padding:6px 12px;font-size:12px;min-height:32px;">143</span>
             </a>
           </div>
         </section>
@@ -184,36 +197,36 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h3 class="card-title">🎒 Community Evacuation Preparedness Checklist</h3>
+              <h3 class="card-title">Pre-Evacuation Protocol Checklist</h3>
               <p class="card-subtitle">Complete before relocating to First City Providential College (FCPC)</p>
             </div>
-            <span id="checklist-progress-badge" class="mono" style="font-size:0.78rem;font-weight:800;background:var(--brand-light);color:var(--brand-primary);padding:4px 10px;border-radius:999px;">0 / 6</span>
+            <span id="checklist-progress-badge" class="status-label mono tabular-nums">0 / 6</span>
           </div>
 
-          <div id="evac-checklist-container" style="display:flex;flex-direction:column;gap:10px;">
-            <label class="toggle-label" style="padding:10px;background:var(--bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+          <div id="evac-checklist-container" style="display:flex;flex-direction:column;gap:8px;">
+            <label class="toggle-label" style="padding:10px 12px;background:var(--muted-surface);border-radius:var(--radius-inner);border:1px solid var(--border);color:var(--foreground);">
               <input type="checkbox" data-check-id="c1">
-              <span>1. Pack 72-Hour Go-Bag (Drinking water, non-perishable food, flashlight, powerbank)</span>
+              <span>1. Prepare 72-hour Go-Bag (drinking water, rations, flashlight, charged powerbank)</span>
             </label>
-            <label class="toggle-label" style="padding:10px;background:var(--bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <label class="toggle-label" style="padding:10px 12px;background:var(--muted-surface);border-radius:var(--radius-inner);border:1px solid var(--border);color:var(--foreground);">
               <input type="checkbox" data-check-id="c2">
-              <span>2. Secure First-Aid Kit, prescription medicines, &amp; hygiene supplies in waterproof pouch</span>
+              <span>2. Seal prescription medications, first-aid supplies, and IDs in waterproof pouch</span>
             </label>
-            <label class="toggle-label" style="padding:10px;background:var(--bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <label class="toggle-label" style="padding:10px 12px;background:var(--muted-surface);border-radius:var(--radius-inner);border:1px solid var(--border);color:var(--foreground);">
               <input type="checkbox" data-check-id="c3">
-              <span>3. Switch OFF main electrical circuit breaker, LPG tank valve, and water main</span>
+              <span>3. Shut off main electrical circuit breaker, LPG cylinder valve, and water valve</span>
             </label>
-            <label class="toggle-label" style="padding:10px;background:var(--bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <label class="toggle-label" style="padding:10px 12px;background:var(--muted-surface);border-radius:var(--radius-inner);border:1px solid var(--border);color:var(--foreground);">
               <input type="checkbox" data-check-id="c4">
-              <span>4. Move appliances and valuables to the 2nd floor or highest elevated shelf</span>
+              <span>4. Elevate essential electronics and appliances above ground-floor flood line</span>
             </label>
-            <label class="toggle-label" style="padding:10px;background:var(--bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <label class="toggle-label" style="padding:10px 12px;background:var(--muted-surface);border-radius:var(--radius-inner);border:1px solid var(--border);color:var(--foreground);">
               <input type="checkbox" data-check-id="c5">
-              <span>5. Account for all household members, children, seniors, and pets</span>
+              <span>5. Account for all household members, children, senior citizens, and pets</span>
             </label>
-            <label class="toggle-label" style="padding:10px;background:var(--bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <label class="toggle-label" style="padding:10px 12px;background:var(--muted-surface);border-radius:var(--radius-inner);border:1px solid var(--border);color:var(--foreground);">
               <input type="checkbox" data-check-id="c6">
-              <span>6. Follow the elevated route via D. Silang St. &amp; Francisco Ave. to FCPC Evacuation Hub</span>
+              <span>6. Proceed along elevated corridor (D. Silang St. &rarr; Francisco Ave. &rarr; FCPC Hub)</span>
             </label>
           </div>
         </section>
@@ -221,41 +234,53 @@
     </div>
   </main>
 
-  <!-- Offline Notification Center Drawer -->
-  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-label="Offline Flood Alert Log">
+  <!-- Offline Telemetry Event Drawer -->
+  <div id="notif-drawer-backdrop" class="drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
     <div class="drawer-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border-subtle);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border);">
         <div>
-          <h3 style="font-size:1.05rem;font-weight:800;">🔔 Offline Flood Alert Log</h3>
-          <p style="font-size:0.75rem;color:var(--text-muted);">Stored locally on device</p>
+          <h3 id="drawer-title" style="font-size:14px;font-weight:600;">Offline Telemetry Event Log</h3>
+          <p style="font-size:12px;color:var(--subtle-foreground);">Persisted in local storage</p>
         </div>
-        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Alert Drawer">✕</button>
+        <button id="close-notif-drawer-btn" class="icon-btn" aria-label="Close Event Drawer">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
       <div id="notif-drawer-list" class="notif-list"></div>
-      <div style="padding-top:12px;border-top:1px solid var(--border-subtle);">
-        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Log</button>
+      <div style="padding-top:12px;border-top:1px solid var(--border);">
+        <button id="clear-notifs-btn" class="btn btn-secondary" style="width:100%;">Clear Event Log</button>
       </div>
     </div>
   </div>
 
-  <!-- Unified Bottom Navigation Bar -->
-  <nav class="bottom-nav" aria-label="Primary Navigation">
+  <!-- Anchored Mobile Bottom Navigation (< 768px) -->
+  <nav class="bottom-nav" aria-label="Mobile Navigation">
     <div class="bottom-nav-inner">
       <a href="index.html" class="nav-item">
-        <span class="nav-icon">🏠</span>
-        <span>Dashboard</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <span>Telemetry</span>
       </a>
       <a href="evacuation.html" class="nav-item">
-        <span class="nav-icon">🗺️</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
         <span>Evac Map</span>
       </a>
       <a href="emergency.html" class="nav-item active" aria-current="page">
-        <span class="nav-icon">🚨</span>
-        <span>Emergency</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>SOS Alert</span>
       </a>
       <a href="feedback.html" class="nav-item">
-        <span class="nav-icon">💬</span>
-        <span>Feedback</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>Reports</span>
       </a>
     </div>
   </nav>
@@ -269,7 +294,6 @@
         waterField.value = `${Number(state.waterLevelCm).toFixed(1)} cm (${state.status})`;
       }
 
-      // 1. Update SMS URI dynamically
       const zoneEl = document.getElementById('sos-zone');
       const countEl = document.getElementById('sos-household-count');
       const urgencyEl = document.getElementById('sos-urgency');
@@ -278,7 +302,7 @@
 
       function updateSmsHref() {
         const st = loadState();
-        const msg = `[WHAZE FLOOD SOS] ${urgencyEl.value} | Zone: ${zoneEl.value} | Water Level: ${Number(st.waterLevelCm).toFixed(1)} cm (${st.status}) | People: ${countEl.value} | Notes: ${notesEl.value || 'Proceeding/Waiting for CSJDM DRRMO'}`;
+        const msg = `[WHAZE FLOOD SOS] ${urgencyEl.value} | Sector: ${zoneEl.value} | Depth: ${Number(st.waterLevelCm).toFixed(1)} cm (${st.status}) | Headcount: ${countEl.value} | Notes: ${notesEl.value || 'Awaiting CSJDM CDRRMO'}`;
         if (smsLink) {
           smsLink.setAttribute('href', `sms:09171234567?body=${encodeURIComponent(msg)}`);
         }
@@ -288,7 +312,6 @@
       });
       updateSmsHref();
 
-      // 2. SOS Broadcast Submit & Offline Persistence
       const sosForm = document.getElementById('sos-broadcast-form');
       const sosFeedback = document.getElementById('sos-feedback-banner');
       const sosListEl = document.getElementById('sos-dispatch-list');
@@ -304,7 +327,7 @@
                 zone: 'Phase G3, Francisco Homes 1, Brgy. Yakal, CSJDM',
                 count: 5,
                 waterCm: '12.0 cm',
-                notes: 'Sunga Household — System Readiness Drill Complete',
+                notes: 'Sunga Household — System Readiness Verification Complete',
                 time: '08:30 AM'
               }
             ];
@@ -323,15 +346,15 @@
         sosListEl.innerHTML = logs
           .map(
             (item) => `
-            <div style="padding:12px;border-radius:var(--radius-md);background:var(--bg-subtle);border:1px solid var(--border-subtle);border-left:4px solid #DC2626;">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <strong style="font-size:0.84rem;color:var(--text-primary);">${item.urgency}</strong>
-                <span class="mono" style="font-size:0.72rem;color:var(--text-muted);">${item.time}</span>
+            <div style="padding:12px;border-radius:var(--radius-inner);background:var(--muted-surface);border:1px solid var(--border);border-left:3px solid var(--status-crit-dot);">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <strong style="font-size:12.5px;color:var(--foreground);">${item.urgency}</strong>
+                <span class="mono" style="font-size:11px;color:var(--subtle-foreground);">${item.time}</span>
               </div>
-              <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:3px;">
-                📍 ${item.zone} • 👥 ${item.count} Person(s) • 🌊 ${item.waterCm}
+              <p class="mono tabular-nums" style="font-size:11.5px;color:var(--muted-foreground);margin-top:4px;">
+                ${item.zone} • Headcount: ${item.count} • Depth: ${item.waterCm}
               </p>
-              ${item.notes ? `<p style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">Note: ${item.notes}</p>` : ''}
+              ${item.notes ? `<p style="font-size:12px;color:var(--subtle-foreground);margin-top:4px;">Notes: ${item.notes}</p>` : ''}
             </div>
           `
           )
@@ -357,15 +380,15 @@
 
           pushNotification(
             'CRITICAL',
-            `🚨 SOS Broadcast Logged (${newEntry.id})`,
-            `${newEntry.urgency} at ${newEntry.zone} (${newEntry.count} household members).`,
+            `SOS Dispatch Logged (${newEntry.id})`,
+            `${newEntry.urgency} at ${newEntry.zone} (${newEntry.count} persons).`,
             st.waterLevelCm
           );
 
           playPiezoBeep(2400, 220);
           renderSosLogs();
           if (sosFeedback) {
-            sosFeedback.textContent = `✅ Emergency SOS (${newEntry.id}) broadcast & saved to offline responder queue!`;
+            sosFeedback.textContent = `SOS Dispatch (${newEntry.id}) recorded in offline responder queue.`;
             sosFeedback.classList.remove('hidden');
           }
           notesEl.value = '';
@@ -374,7 +397,6 @@
       }
       renderSosLogs();
 
-      // 3. Audible Siren Toggle
       const sirenBtn = document.getElementById('btn-toggle-siren');
       let sirenActive = false;
       let sirenTimer = null;
@@ -384,23 +406,20 @@
         sirenBtn.addEventListener('click', () => {
           sirenActive = !sirenActive;
           if (sirenActive) {
-            sirenBtn.textContent = '⏹️ Stop Siren';
-            sirenBtn.style.background = '#FEF08A';
+            sirenBtn.textContent = 'Stop Acoustic Siren';
             playPiezoBeep(960, 280);
             sirenTimer = setInterval(() => {
               highPitch = !highPitch;
               playPiezoBeep(highPitch ? 1320 : 880, 280);
             }, 320);
           } else {
-            sirenBtn.textContent = '🔊 Activate Siren';
-            sirenBtn.style.background = '#FFFFFF';
+            sirenBtn.textContent = 'Activate Siren';
             if (sirenTimer) clearInterval(sirenTimer);
             sirenTimer = null;
           }
         });
       }
 
-      // 4. Persistent Evacuation Checklist
       const checkInputs = document.querySelectorAll('[data-check-id]');
       const progressBadge = document.getElementById('checklist-progress-badge');
 
@@ -421,7 +440,7 @@
           if (chk.checked) completed++;
         });
         if (progressBadge) {
-          progressBadge.textContent = `${completed} / ${checkInputs.length} Ready`;
+          progressBadge.textContent = `${completed} / ${checkInputs.length} COMPLETE`;
         }
       }
 
