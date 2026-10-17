@@ -64,7 +64,7 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: Sync Capacitor Android Project
-        run: npx cap sync android --verbose
+        run: npx cap sync android
 
       - name: Build Android APK
         working-directory: ./android
