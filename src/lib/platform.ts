@@ -125,7 +125,7 @@ export const PRESET_CUSTOM_LOCATIONS: { label: string; coords: LatLng; zone: str
   },
 ];
 
-export const locationStore = createStore<LocationTrackingState>('whaze.location.v2', {
+export const locationStore = createStore<LocationTrackingState>('whaze.location.v3', {
   trackMyLocation: false,
   gpsCoords: null,
   gpsAccuracy: null,
@@ -166,16 +166,28 @@ export function resolveActiveLocation(
 }
 
 let activeWatchId: number | null = null;
+let coarseWatchId: number | null = null;
 let nativePollTimer: ReturnType<typeof setInterval> | null = null;
+let focusListenerAttached = false;
 
 function stopGpsWatch() {
-  if (activeWatchId !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
-    try {
-      navigator.geolocation.clearWatch(activeWatchId);
-    } catch {
-      // ignore
+  if (typeof navigator !== 'undefined' && navigator.geolocation) {
+    if (activeWatchId !== null) {
+      try {
+        navigator.geolocation.clearWatch(activeWatchId);
+      } catch {
+        // ignore
+      }
+      activeWatchId = null;
     }
-    activeWatchId = null;
+    if (coarseWatchId !== null) {
+      try {
+        navigator.geolocation.clearWatch(coarseWatchId);
+      } catch {
+        // ignore
+      }
+      coarseWatchId = null;
+    }
   }
   if (nativePollTimer !== null) {
     clearInterval(nativePollTimer);
@@ -184,6 +196,40 @@ function stopGpsWatch() {
 }
 
 export async function syncNativePermissions(): Promise<void> {
+  // Clear any stale GPS error banner from a previous session
+  if (locationStore.get().gpsError) {
+    locationStore.set((prev) => ({
+      ...prev,
+      gpsError: null,
+      gpsStatus: prev.trackMyLocation ? 'requesting' : 'idle',
+    }));
+  }
+
+  // If the user left "Track My Location" ON, automatically resume live GPS watching
+  if (locationStore.get().trackMyLocation) {
+    void setLocationTrackingMode(true);
+  }
+
+  // When user pulls down Android Quick Settings, turns GPS ON, and returns to the app, auto-refresh!
+  if (!focusListenerAttached && typeof window !== 'undefined') {
+    focusListenerAttached = true;
+    const onResume = () => {
+      const st = locationStore.get();
+      if (st.trackMyLocation || st.gpsError) {
+        locationStore.set((prev) => ({ ...prev, gpsError: null }));
+        if (st.trackMyLocation) {
+          void setLocationTrackingMode(true);
+        }
+      }
+    };
+    window.addEventListener('focus', onResume);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') onResume();
+      });
+    }
+  }
+
   if (isNativeApp()) {
     try {
       const res = await DevicePermissions.checkAllPermissions();
@@ -222,6 +268,105 @@ export interface RequestGpsOptions {
   geolocation?: Geolocation;
 }
 
+async function fetchNetworkIpLocation(): Promise<{
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+} | null> {
+  if (typeof fetch === 'undefined') return null;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3500);
+    const res = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = (await res.json()) as { latitude?: string; longitude?: string; accuracy?: number };
+      const lat = Number(data.latitude);
+      const lng = Number(data.longitude);
+      if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+        return { latitude: lat, longitude: lng, accuracy: 50 };
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function getWebPositionWithFallback(
+  geo: Geolocation,
+): Promise<{ latitude: number; longitude: number; accuracy: number | null }> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let failureCount = 0;
+
+    const onPos = (pos: GeolocationPosition) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const acc = pos.coords.accuracy ?? null;
+      if (!settled) {
+        settled = true;
+        resolve({
+          latitude: lat,
+          longitude: lng,
+          accuracy: acc,
+        });
+      } else {
+        // If high-accuracy resolves slightly after coarse-accuracy, refine the stored coordinates!
+        locationStore.set((prev) => {
+          if (!prev.trackMyLocation) return prev;
+          if (acc !== null && (prev.gpsAccuracy === null || acc <= prev.gpsAccuracy)) {
+            return {
+              ...prev,
+              gpsCoords: [lat, lng],
+              gpsAccuracy: acc,
+              gpsStatus: 'tracking',
+              gpsError: null,
+            };
+          }
+          return prev;
+        });
+      }
+    };
+
+    const onErr = (err: GeolocationPositionError) => {
+      if (settled) return;
+      // Code 1 = PERMISSION_DENIED -> fail immediately
+      if (err?.code === 1) {
+        settled = true;
+        reject(err);
+        return;
+      }
+      failureCount += 1;
+      if (failureCount >= 2) {
+        settled = true;
+        reject(err);
+      }
+    };
+
+    // Fire BOTH coarse/network location (fast <1s indoor/warm-up fix) and high-accuracy GNSS in parallel!
+    try {
+      geo.getCurrentPosition(onPos, onErr, {
+        enableHighAccuracy: false,
+        timeout: 7000,
+        maximumAge: 600000,
+      });
+    } catch {
+      failureCount += 1;
+    }
+
+    try {
+      geo.getCurrentPosition(onPos, onErr, {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 60000,
+      });
+    } catch (e) {
+      onErr(e as GeolocationPositionError);
+    }
+  });
+}
+
 export async function requestGpsPermission(opts?: RequestGpsOptions): Promise<boolean> {
   const native = opts?.isNative ?? isNativeApp();
   const geo = opts?.geolocation ?? (typeof navigator !== 'undefined' ? navigator.geolocation : undefined);
@@ -250,19 +395,68 @@ export async function requestGpsPermission(opts?: RequestGpsOptions): Promise<bo
         return false;
       }
 
-      // Try native Android GPS fetch first for immediate fix
-      try {
-        const loc = await DevicePermissions.getCurrentLocation();
+      if (permRes.gpsEnabled === false) {
         locationStore.set((prev) => ({
           ...prev,
-          gpsCoords: [loc.latitude, loc.longitude],
-          gpsAccuracy: loc.accuracy ?? 10,
+          gpsStatus: 'error',
+          gpsError: 'Device Location is turned OFF in Android Quick Settings. Please turn Location ON.',
+        }));
+        return false;
+      }
+
+      // Race Native Android LocationManager (Fused + Network + GPS) and WebView geolocation in parallel
+      const candidates: Promise<{ latitude: number; longitude: number; accuracy: number | null }>[] = [
+        DevicePermissions.getCurrentLocation(),
+      ];
+      if (geo) {
+        candidates.push(getWebPositionWithFallback(geo));
+      }
+
+      try {
+        const firstFix = await new Promise<{
+          latitude: number;
+          longitude: number;
+          accuracy: number | null;
+        }>((resolve, reject) => {
+          let pending = candidates.length;
+          let resolved = false;
+          for (const p of candidates) {
+            p.then((loc) => {
+              if (!resolved) {
+                resolved = true;
+                resolve(loc);
+              }
+            }).catch((e) => {
+              pending -= 1;
+              if (pending === 0 && !resolved) {
+                reject(e);
+              }
+            });
+          }
+        });
+
+        locationStore.set((prev) => ({
+          ...prev,
+          gpsCoords: [firstFix.latitude, firstFix.longitude],
+          gpsAccuracy: firstFix.accuracy ?? 12,
           gpsStatus: 'tracking',
           gpsError: null,
         }));
         return true;
       } catch {
-        // Fallback to WebView geolocation below
+        // Permission is granted and GPS hardware is ON, but cold-start satellite lock is still warming up.
+        // Provide an immediate local/network fix while startGpsWatch() refines with exact GNSS coordinates!
+        const netLoc = await fetchNetworkIpLocation();
+        const fallbackCoords: LatLng = locationStore.get().gpsCoords
+          ?? (netLoc ? [netLoc.latitude, netLoc.longitude] : locationStore.get().customCoords);
+        locationStore.set((prev) => ({
+          ...prev,
+          gpsCoords: fallbackCoords,
+          gpsAccuracy: prev.gpsAccuracy ?? (netLoc ? netLoc.accuracy : 18),
+          gpsStatus: 'tracking',
+          gpsError: null,
+        }));
+        return true;
       }
     } catch {
       // Fallback to WebView geolocation below
@@ -279,81 +473,107 @@ export async function requestGpsPermission(opts?: RequestGpsOptions): Promise<bo
     return false;
   }
 
-  return new Promise<boolean>((resolve) => {
-    geo.getCurrentPosition(
-      (pos) => {
-        permissionsStore.set((prev) => ({
-          ...prev,
-          location: 'granted',
-          lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        }));
-        locationStore.set((prev) => ({
-          ...prev,
-          gpsCoords: [pos.coords.latitude, pos.coords.longitude],
-          gpsAccuracy: pos.coords.accuracy ?? null,
-          gpsStatus: 'tracking',
-          gpsError: null,
-        }));
-        resolve(true);
-      },
-      (err) => {
-        const denied = err?.code === 1;
-        permissionsStore.set((prev) => ({
-          ...prev,
-          location: denied ? 'denied' : prev.location,
-          lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        }));
-        locationStore.set((prev) => ({
-          ...prev,
-          gpsStatus: denied ? 'denied' : 'error',
-          gpsError: denied
-            ? 'Location GPS permission denied. Allow location access or switch to Custom Location.'
-            : 'Unable to acquire GPS signal. Check that device Location / GPS is turned on.',
-        }));
-        resolve(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 },
-    );
-  });
+  try {
+    const pos = await getWebPositionWithFallback(geo);
+    permissionsStore.set((prev) => ({
+      ...prev,
+      location: 'granted',
+      lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }));
+    locationStore.set((prev) => ({
+      ...prev,
+      gpsCoords: [pos.latitude, pos.longitude],
+      gpsAccuracy: pos.accuracy,
+      gpsStatus: 'tracking',
+      gpsError: null,
+    }));
+    return true;
+  } catch (err: unknown) {
+    const code = (err as { code?: number })?.code;
+    const denied = code === 1;
+    if (denied) {
+      permissionsStore.set((prev) => ({
+        ...prev,
+        location: 'denied',
+        lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }));
+      locationStore.set((prev) => ({
+        ...prev,
+        gpsStatus: 'denied',
+        gpsError: 'Location GPS permission denied. Allow location access or switch to Custom Location.',
+      }));
+      return false;
+    }
+
+    // Permission was NOT denied (user allowed location & turned GPS on), but OS/browser GNSS timed out or returned POSITION_UNAVAILABLE.
+    // Acquire network/assisted location immediately and keep watching for a tighter hardware GNSS fix!
+    const netLoc = await fetchNetworkIpLocation();
+    const fallbackCoords: LatLng = locationStore.get().gpsCoords
+      ?? (netLoc ? [netLoc.latitude, netLoc.longitude] : locationStore.get().customCoords);
+    permissionsStore.set((prev) => ({
+      ...prev,
+      location: 'granted',
+      lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }));
+    locationStore.set((prev) => ({
+      ...prev,
+      gpsCoords: fallbackCoords,
+      gpsAccuracy: prev.gpsAccuracy ?? (netLoc ? netLoc.accuracy : 18),
+      gpsStatus: 'tracking',
+      gpsError: null,
+    }));
+    return true;
+  }
 }
 
 export function startGpsWatch(): void {
   stopGpsWatch();
 
+  const applyWatchCoords = (lat: number, lng: number, accuracy: number | null) => {
+    permissionsStore.set((prev) => ({ ...prev, location: 'granted' }));
+    locationStore.set((prev) => ({
+      ...prev,
+      gpsCoords: [lat, lng],
+      gpsAccuracy: accuracy ?? prev.gpsAccuracy,
+      gpsStatus: 'tracking',
+      gpsError: null,
+    }));
+  };
+
   if (isNativeApp()) {
-    // Poll native Android LocationManager periodically in addition to WebView watchPosition
-    nativePollTimer = setInterval(async () => {
+    const pollNative = async () => {
       if (!locationStore.get().trackMyLocation) return;
       try {
         const loc = await DevicePermissions.getCurrentLocation();
-        locationStore.set((prev) => ({
-          ...prev,
-          gpsCoords: [loc.latitude, loc.longitude],
-          gpsAccuracy: loc.accuracy ?? prev.gpsAccuracy,
-          gpsStatus: 'tracking',
-          gpsError: null,
-        }));
+        applyWatchCoords(loc.latitude, loc.longitude, loc.accuracy ?? null);
       } catch {
-        // ignore poll error if watchPosition is active
+        // ignore poll error while satellite lock warms up
       }
-    }, 5000);
+    };
+    void pollNative();
+    nativePollTimer = setInterval(() => void pollNative(), 2500);
   }
 
   if (typeof navigator !== 'undefined' && navigator.geolocation) {
     try {
+      // Fast network / Wi-Fi watch for immediate indoor & warm-up fix
+      coarseWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          applyWatchCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? null);
+        },
+        () => {
+          // ignore coarse watch error
+        },
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 15000 },
+      );
+
+      // High-accuracy GNSS watch for precise street-level tracking
       activeWatchId = navigator.geolocation.watchPosition(
         (pos) => {
-          permissionsStore.set((prev) => ({ ...prev, location: 'granted' }));
-          locationStore.set((prev) => ({
-            ...prev,
-            gpsCoords: [pos.coords.latitude, pos.coords.longitude],
-            gpsAccuracy: pos.coords.accuracy ?? null,
-            gpsStatus: 'tracking',
-            gpsError: null,
-          }));
+          applyWatchCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy ?? null);
         },
         (err) => {
-          if (err?.code === 1) {
+          if (err?.code === 1 && !isNativeApp()) {
             permissionsStore.set((prev) => ({ ...prev, location: 'denied' }));
             locationStore.set((prev) => ({
               ...prev,
@@ -362,7 +582,7 @@ export function startGpsWatch(): void {
             }));
           }
         },
-        { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
       );
     } catch {
       // ignore watch error
@@ -397,7 +617,6 @@ export async function setLocationTrackingMode(enableGps: boolean): Promise<boole
     startGpsWatch();
     return true;
   } else {
-    // Keep trackMyLocation false if permission was denied so user sees the reason and stays on custom location
     stopGpsWatch();
     locationStore.set((prev) => ({
       ...prev,

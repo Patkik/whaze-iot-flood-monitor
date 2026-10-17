@@ -10,9 +10,13 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.ContactsContract;
 import androidx.activity.result.ActivityResult;
 import androidx.core.content.ContextCompat;
@@ -27,7 +31,9 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @CapacitorPlugin(
     name = "DevicePermissions",
@@ -64,6 +70,10 @@ import java.util.Set;
 )
 public class DevicePermissionsPlugin extends Plugin {
 
+    private volatile Location latestLocation = null;
+    private LocationListener continuousListener = null;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     private String getBtAlias() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? "bluetoothModern" : "bluetoothLegacy";
     }
@@ -77,8 +87,12 @@ public class DevicePermissionsPlugin extends Plugin {
     private boolean isGpsHardwareEnabled() {
         try {
             LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
-            return lm != null && (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)
-                || lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+            if (lm == null) return false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                if (lm.isLocationEnabled()) return true;
+            }
+            return lm.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         } catch (Exception e) {
             return false;
         }
@@ -91,6 +105,110 @@ public class DevicePermissionsPlugin extends Plugin {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private void ensureContinuousLocationUpdates(LocationManager lm) {
+        if (continuousListener != null || lm == null) return;
+        continuousListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                if (location != null) {
+                    latestLocation = chooseBetterLocation(location, latestLocation);
+                }
+            }
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
+            @Override
+            public void onProviderEnabled(String provider) {}
+            @Override
+            public void onProviderDisabled(String provider) {}
+        };
+
+        mainHandler.post(() -> {
+            try {
+                String[] providers = new String[] {
+                    "fused",
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.GPS_PROVIDER,
+                    LocationManager.PASSIVE_PROVIDER
+                };
+                for (String provider : providers) {
+                    try {
+                        lm.requestLocationUpdates(provider, 2000L, 0f, continuousListener, Looper.getMainLooper());
+                    } catch (Exception ignored) {}
+                }
+                List<String> all = lm.getAllProviders();
+                if (all != null) {
+                    for (String provider : all) {
+                        try {
+                            lm.requestLocationUpdates(provider, 2000L, 0f, continuousListener, Looper.getMainLooper());
+                        } catch (Exception ignored) {}
+                    }
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
+    private Location chooseBetterLocation(Location candidate, Location currentBest) {
+        if (candidate == null) return currentBest;
+        if (currentBest == null) return candidate;
+
+        long timeDelta = candidate.getTime() - currentBest.getTime();
+        boolean isSignificantlyNewer = timeDelta > 60_000L;
+        boolean isSignificantlyOlder = timeDelta < -60_000L;
+        boolean isNewer = timeDelta > 0;
+
+        if (isSignificantlyNewer) return candidate;
+        if (isSignificantlyOlder) return currentBest;
+
+        int accuracyDelta = (int) (candidate.getAccuracy() - currentBest.getAccuracy());
+        boolean isMoreAccurate = accuracyDelta < 0;
+        boolean isLessAccurate = accuracyDelta > 0;
+        boolean isSignificantlyLessAccurate = accuracyDelta > 100;
+
+        if (isMoreAccurate) return candidate;
+        if (isNewer && !isLessAccurate) return candidate;
+        if (isNewer && !isSignificantlyLessAccurate) return candidate;
+        return currentBest;
+    }
+
+    @SuppressLint("MissingPermission")
+    private Location findBestLastKnownLocation(LocationManager lm) {
+        Location best = latestLocation;
+        try {
+            String[] knownProviders = new String[] {
+                "fused",
+                LocationManager.GPS_PROVIDER,
+                LocationManager.NETWORK_PROVIDER,
+                LocationManager.PASSIVE_PROVIDER
+            };
+            for (String provider : knownProviders) {
+                try {
+                    Location loc = lm.getLastKnownLocation(provider);
+                    best = chooseBetterLocation(loc, best);
+                } catch (Exception ignored) {}
+            }
+            List<String> providers = lm.getAllProviders();
+            if (providers != null) {
+                for (String provider : providers) {
+                    try {
+                        Location loc = lm.getLastKnownLocation(provider);
+                        best = chooseBetterLocation(loc, best);
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
+        return best;
+    }
+
+    private JSObject locationToJS(Location loc) {
+        JSObject ret = new JSObject();
+        ret.put("latitude", loc.getLatitude());
+        ret.put("longitude", loc.getLongitude());
+        ret.put("accuracy", loc.hasAccuracy() ? loc.getAccuracy() : 15.0);
+        ret.put("timestamp", loc.getTime());
+        return ret;
     }
 
     @PluginMethod
@@ -107,6 +225,8 @@ public class DevicePermissionsPlugin extends Plugin {
     @PluginMethod
     public void requestLocationPermission(PluginCall call) {
         if (getPermissionState("location") == PermissionState.GRANTED) {
+            LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+            ensureContinuousLocationUpdates(lm);
             JSObject ret = new JSObject();
             ret.put("location", "granted");
             ret.put("gpsEnabled", isGpsHardwareEnabled());
@@ -118,8 +238,13 @@ public class DevicePermissionsPlugin extends Plugin {
 
     @PermissionCallback
     private void locationPermsCallback(PluginCall call) {
+        PermissionState state = getPermissionState("location");
+        if (state == PermissionState.GRANTED) {
+            LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+            ensureContinuousLocationUpdates(lm);
+        }
         JSObject ret = new JSObject();
-        ret.put("location", mapPermState(getPermissionState("location")));
+        ret.put("location", mapPermState(state));
         ret.put("gpsEnabled", isGpsHardwareEnabled());
         call.resolve(ret);
     }
@@ -172,33 +297,121 @@ public class DevicePermissionsPlugin extends Plugin {
             return;
         }
         try {
-            LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+            final LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
             if (lm == null) {
                 call.reject("LocationManager unavailable");
                 return;
             }
 
-            Location best = null;
-            if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                best = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            }
-            if (best == null && lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                best = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            }
-            if (best == null) {
-                best = lm.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+            ensureContinuousLocationUpdates(lm);
+
+            Location best = findBestLastKnownLocation(lm);
+            if (best != null) {
+                latestLocation = best;
+                call.resolve(locationToJS(best));
+                return;
             }
 
-            if (best != null) {
-                JSObject ret = new JSObject();
-                ret.put("latitude", best.getLatitude());
-                ret.put("longitude", best.getLongitude());
-                ret.put("accuracy", best.hasAccuracy() ? best.getAccuracy() : 12.0);
-                ret.put("timestamp", best.getTime());
-                call.resolve(ret);
-            } else {
-                call.reject("Waiting for GPS satellite fix");
+            if (!isGpsHardwareEnabled()) {
+                call.reject("Device Location / GPS service is turned off");
+                return;
             }
+
+            // No cached location yet (e.g., user just turned GPS on). Actively request a fresh fix on main looper!
+            final AtomicBoolean settled = new AtomicBoolean(false);
+            final LocationListener oneShotListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    if (location != null) {
+                        latestLocation = chooseBetterLocation(location, latestLocation);
+                        if (settled.compareAndSet(false, true)) {
+                            try {
+                                lm.removeUpdates(this);
+                            } catch (Exception ignored) {}
+                            call.resolve(locationToJS(location));
+                        }
+                    }
+                }
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {}
+                @Override
+                public void onProviderEnabled(String provider) {}
+                @Override
+                public void onProviderDisabled(String provider) {}
+            };
+
+            mainHandler.post(() -> {
+                String[] activeProviders = new String[] {
+                    "fused",
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.GPS_PROVIDER,
+                    LocationManager.PASSIVE_PROVIDER
+                };
+                boolean anyRegistered = false;
+
+                // On Android 11+ (API 30+), also invoke lm.getCurrentLocation() directly for fast Fused/Network wake-up
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    for (String p : activeProviders) {
+                        try {
+                            lm.getCurrentLocation(
+                                p,
+                                null,
+                                ContextCompat.getMainExecutor(getContext()),
+                                location -> {
+                                    if (location != null) {
+                                        latestLocation = chooseBetterLocation(location, latestLocation);
+                                        if (settled.compareAndSet(false, true)) {
+                                            try {
+                                                lm.removeUpdates(oneShotListener);
+                                            } catch (Exception ignored) {}
+                                            call.resolve(locationToJS(location));
+                                        }
+                                    }
+                                }
+                            );
+                            anyRegistered = true;
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                for (String p : activeProviders) {
+                    try {
+                        lm.requestLocationUpdates(p, 200L, 0f, oneShotListener, Looper.getMainLooper());
+                        anyRegistered = true;
+                    } catch (Exception ignored) {}
+                }
+
+                List<String> allProviders = lm.getAllProviders();
+                if (allProviders != null) {
+                    for (String p : allProviders) {
+                        try {
+                            lm.requestLocationUpdates(p, 200L, 0f, oneShotListener, Looper.getMainLooper());
+                            anyRegistered = true;
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                if (!anyRegistered) {
+                    if (settled.compareAndSet(false, true)) {
+                        call.reject("No location providers available");
+                    }
+                    return;
+                }
+
+                mainHandler.postDelayed(() -> {
+                    if (settled.compareAndSet(false, true)) {
+                        try {
+                            lm.removeUpdates(oneShotListener);
+                        } catch (Exception ignored) {}
+                        Location fallback = findBestLastKnownLocation(lm);
+                        if (fallback != null) {
+                            call.resolve(locationToJS(fallback));
+                        } else {
+                            call.reject("Acquiring initial GPS fix");
+                        }
+                    }
+                }, 8000L);
+            });
         } catch (Exception e) {
             call.reject("Failed to read GPS location: " + e.getMessage());
         }

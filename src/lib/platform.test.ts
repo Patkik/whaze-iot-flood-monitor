@@ -117,6 +117,53 @@ describe('Permissions (Location GPS, Contacts, Bluetooth)', () => {
     expect(locationStore.get().gpsCoords).toEqual([14.8089, 121.0595]);
   });
 
+  it('acquires location via coarse/network provider when high-accuracy GNSS times out after turning GPS on', async () => {
+    const mockGetPos = vi.fn(
+      (success: PositionCallback, error?: PositionErrorCallback, options?: PositionOptions) => {
+        if (options?.enableHighAccuracy) {
+          // Simulate cold-start satellite timeout (code 3 = TIMEOUT)
+          error?.({
+            code: 3,
+            message: 'Timeout expired',
+            PERMISSION_DENIED: 1,
+            POSITION_UNAVAILABLE: 2,
+            TIMEOUT: 3,
+          });
+        } else {
+          // Coarse / Network location responds immediately when GPS is turned ON
+          success({
+            coords: {
+              latitude: 14.8085,
+              longitude: 121.0589,
+              accuracy: 15,
+              altitude: null,
+              altitudeAccuracy: null,
+              heading: null,
+              speed: null,
+              toJSON: () => ({}),
+            },
+            timestamp: Date.now(),
+            toJSON: () => ({}),
+          });
+        }
+      },
+    );
+
+    const granted = await requestGpsPermission({
+      isNative: false,
+      geolocation: {
+        getCurrentPosition: mockGetPos,
+        watchPosition: vi.fn(() => 1),
+        clearWatch: vi.fn(),
+      } as unknown as Geolocation,
+    });
+
+    expect(granted).toBe(true);
+    expect(permissionsStore.get().location).toBe('granted');
+    expect(locationStore.get().gpsCoords).toEqual([14.8085, 121.0589]);
+    expect(locationStore.get().gpsError).toBeNull();
+  });
+
   it('requests Contacts permission and manages emergency contacts', async () => {
     const granted = await requestContactsPermission({ isNative: false });
     expect(granted).toBe(true);
@@ -141,3 +188,4 @@ describe('Permissions (Location GPS, Contacts, Bluetooth)', () => {
     expect(permissionsStore.get().bluetooth).toBe('granted');
   });
 });
+

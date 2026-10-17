@@ -15,6 +15,10 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(DevicePermissionsPlugin.class);
         super.onCreate(savedInstanceState);
 
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().getSettings().setGeolocationEnabled(true);
+        }
+
         final View rootView = getWindow().getDecorView();
         ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
             Insets bars = windowInsets.getInsets(
