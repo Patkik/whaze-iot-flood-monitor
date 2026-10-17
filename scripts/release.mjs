@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -16,10 +16,30 @@ if (argVersion && argVersion !== pkg.version) {
   pkg.version = targetVersion;
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
   console.log(`Updated package.json version to ${targetVersion}`);
-  execSync(`git add package.json`, { cwd: rootDir, stdio: 'inherit' });
+
+  const lockPath = join(rootDir, 'package-lock.json');
+  if (existsSync(lockPath)) {
+    try {
+      const lock = JSON.parse(readFileSync(lockPath, 'utf-8'));
+      lock.version = targetVersion;
+      if (lock.packages && lock.packages['']) lock.packages[''].version = targetVersion;
+      writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+    } catch {}
+  }
+
+  const gradlePath = join(rootDir, 'android', 'app', 'build.gradle');
+  if (existsSync(gradlePath)) {
+    let gradle = readFileSync(gradlePath, 'utf-8');
+    gradle = gradle.replace(/versionName\s+"[^"]+"/, `versionName "${targetVersion}"`);
+    gradle = gradle.replace(/versionCode\s+(\d+)/, (_, code) => `versionCode ${parseInt(code, 10) + 1}`);
+    writeFileSync(gradlePath, gradle);
+  }
+
+  execSync(`git add package.json package-lock.json android/app/build.gradle`, { cwd: rootDir, stdio: 'ignore' });
   execSync(`git commit -m "chore(release): bump version to ${targetVersion}"`, {
     cwd: rootDir,
     stdio: 'inherit',
+    env: { ...process.env, SKIP_VERSION_BUMP: '1' },
   });
 }
 

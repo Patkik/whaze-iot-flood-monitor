@@ -1,7 +1,7 @@
 {
   "name": "whaze-iot-flood-monitor",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,9 @@
     "cap:sync": "npx cap sync android",
     "cap:open": "npx cap open android",
     "build:android": "npm run build && npx cap sync android",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "version:bump": "node scripts/bump-version.mjs",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
