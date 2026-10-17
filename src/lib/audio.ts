@@ -1,6 +1,7 @@
 let ctx: AudioContext | null = null;
 
 export function unlockAudio() {
+  if (typeof window === 'undefined') return;
   if (!ctx) {
     const C = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (C) ctx = new C();
@@ -8,13 +9,56 @@ export function unlockAudio() {
   if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
 }
 
+let criticalAudio: HTMLAudioElement | null = null;
+let isCriticalActive = false;
+
+export function getCriticalAudio(): HTMLAudioElement | null {
+  if (typeof Audio === 'undefined') return null;
+  if (!criticalAudio) {
+    criticalAudio = new Audio('/critical-alarm.mp3');
+    criticalAudio.loop = true;
+    criticalAudio.volume = 0.9;
+  }
+  return criticalAudio;
+}
+
+export function playCriticalMusic(): () => void {
+  isCriticalActive = true;
+  unlockAudio();
+  const audio = getCriticalAudio();
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
+  return () => {
+    stopCriticalMusic();
+  };
+}
+
+export function stopCriticalMusic() {
+  isCriticalActive = false;
+  if (criticalAudio) {
+    try {
+      criticalAudio.pause();
+      criticalAudio.currentTime = 0;
+    } catch {
+      // ignore audio state error
+    }
+  }
+}
+
 /** Browsers block audio before a gesture; unlock on the first interaction. */
 export function bindAudioUnlock() {
-  const once = () => {
+  if (typeof window === 'undefined') return;
+  const onInteraction = () => {
     unlockAudio();
-    ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.removeEventListener(e, once));
+    if (criticalAudio && isCriticalActive && criticalAudio.paused) {
+      criticalAudio.play().catch(() => {});
+    }
   };
-  ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.addEventListener(e, once, { passive: true }));
+  ['pointerdown', 'keydown', 'touchstart'].forEach((e) =>
+    window.addEventListener(e, onInteraction, { passive: true }),
+  );
 }
 
 export function beep(freq = 2700, ms = 180, type: OscillatorType = 'square', volume = 0.08) {

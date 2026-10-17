@@ -86,7 +86,7 @@ function Simulator() {
         </label>
         <label className="flex min-h-11 items-center gap-3 text-sm">
           <input type="checkbox" className="h-5 w-5 accent-brand" checked={t.muted} onChange={(e) => telemetry.set({ ...t, muted: e.target.checked })} />
-          Mute piezo alarm
+          Mute critical alarm audio
         </label>
       </div>
     </Section>

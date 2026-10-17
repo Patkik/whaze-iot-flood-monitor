@@ -31,12 +31,14 @@ export function createStore<T>(key: string, initial: T) {
     return () => listeners.delete(cb);
   }
 
-  window.addEventListener('storage', (e) => {
-    if (e.key === key) {
-      cache = read();
-      listeners.forEach((l) => l());
-    }
-  });
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (e) => {
+      if (e.key === key) {
+        cache = read();
+        listeners.forEach((l) => l());
+      }
+    });
+  }
 
   return {
     get: () => cache,

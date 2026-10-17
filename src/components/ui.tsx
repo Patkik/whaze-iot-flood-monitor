@@ -16,6 +16,7 @@ const paths: Record<string, ReactNode> = {
   send: (<><path d="m22 2-7 20-4-9-9-4z" /><path d="M22 2 11 13" /></>),
   speaker: (<><path d="M11 5 6 9H2v6h4l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" /></>),
   download: <path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />,
+  refresh: (<><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /><path d="M16 16h5v5" /></>),
 };
 
 export function Icon({ name, size = 18, ...rest }: { name: keyof typeof paths; size?: number } & SVGProps<SVGSVGElement>) {

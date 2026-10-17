@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { Icon, LevelBadge } from './ui';
 import { alerts, telemetry } from '../lib/stores';
-import { beep } from '../lib/audio';
+import { playCriticalMusic, stopCriticalMusic } from '../lib/audio';
 import WaterLoadingScreen from './WaterLoadingScreen';
+import { UpdateBanner, UpdateModal } from './UpdateModal';
+import { getCurrentBuildInfo, runUpdateCheck, updaterStore } from '../lib/updater';
 
 const NAV = [
   { to: '/', label: 'Monitor', icon: 'pulse' },
@@ -78,16 +80,37 @@ function AlertsDrawer({ open, onClose }: { open: boolean; onClose: () => void })
 export default function Shell() {
   const t = telemetry.use();
   const list = alerts.use();
+  const u = updaterStore.use();
+  const build = getCurrentBuildInfo();
   const [open, setOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('whaze_water_splash_seen'));
 
-  // Piezo loop mirrors the ESP32 buzzer while critical and not muted.
+  // Automatically check GitHub for updates on startup when online.
   useEffect(() => {
-    if (t.status !== 'CRITICAL' || t.muted) return;
-    beep();
-    const id = window.setInterval(() => beep(), 1200);
-    return () => window.clearInterval(id);
+    if (navigator.onLine) {
+      void runUpdateCheck({ openModal: false });
+    }
+  }, []);
+
+  // Critical alert music when status is CRITICAL and not muted.
+  useEffect(() => {
+    if (t.status !== 'CRITICAL' || t.muted) {
+      stopCriticalMusic();
+      return;
+    }
+    const stop = playCriticalMusic();
+    return () => {
+      stop();
+    };
   }, [t.status, t.muted]);
+
+  const openUpdater = () => {
+    if (u.status === 'idle' || u.status === 'error') {
+      void runUpdateCheck({ openModal: true });
+    } else {
+      updaterStore.set({ ...u, modalOpen: true });
+    }
+  };
 
   return (
     <div className="min-h-screen lg:pl-60">
@@ -126,6 +149,25 @@ export default function Shell() {
           ))}
         </nav>
         <div className="mt-auto space-y-2 text-xs text-faint">
+          <button
+            type="button"
+            onClick={openUpdater}
+            className="flex w-full items-center justify-between rounded-lg border border-line bg-bg px-3 py-2 text-left text-xs font-medium text-ink hover:border-brand"
+          >
+            <span className="flex items-center gap-2">
+              <Icon name="download" size={14} className="text-brand" />
+              <span>System update</span>
+            </span>
+            <span className="tnum font-mono text-[11px] text-faint">
+              {u.status === 'available' ? (
+                <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  New
+                </span>
+              ) : (
+                `v${build.version}`
+              )}
+            </span>
+          </button>
           <ModePill />
           <p>Brgy. Narra and Brgy. Yakal, Francisco Homes, CSJDM, Bulacan</p>
         </div>
@@ -140,6 +182,17 @@ export default function Shell() {
         <div className="hidden text-sm text-muted lg:block">Brgy. Narra and Yakal, CSJDM</div>
         <div className="flex items-center gap-2">
           <span className="hidden sm:block lg:hidden"><ModePill /></span>
+          <button
+            className="btn-quiet relative !min-h-10 !px-2.5 text-xs"
+            onClick={openUpdater}
+            aria-label="Check for GitHub system updates"
+          >
+            <Icon name="download" size={16} />
+            <span className="hidden sm:inline">Update</span>
+            {u.status === 'available' && (
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-brand ring-2 ring-surface" />
+            )}
+          </button>
           <button className="btn-quiet relative !min-h-10 !px-2.5" onClick={() => setOpen(true)} aria-label={`Open alert log, ${list.length} entries`}>
             <Icon name="bell" />
             {list.length > 0 && (
@@ -150,6 +203,8 @@ export default function Shell() {
           </button>
         </div>
       </header>
+
+      <UpdateBanner />
 
       {t.status === 'CRITICAL' && (
         <div role="alert" className="sticky top-14 z-20 border-b border-red-200 bg-crit-tint">
@@ -184,6 +239,7 @@ export default function Shell() {
       </nav>
 
       <AlertsDrawer open={open} onClose={() => setOpen(false)} />
+      <UpdateModal />
     </div>
   );
 }
