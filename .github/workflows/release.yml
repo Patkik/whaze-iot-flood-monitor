@@ -58,11 +58,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Make Gradlew Executable
-        run: chmod +x android/gradlew
+      - name: Make Gradlew Executable & Set SDK Path
+        run: |
+          chmod +x android/gradlew
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
       - name: Sync Capacitor Android Project
-        run: npx cap sync android
+        run: npx cap sync android --verbose
 
       - name: Build Android APK
         working-directory: ./android
