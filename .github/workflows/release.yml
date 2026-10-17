@@ -2,6 +2,8 @@ name: Build & Publish Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -30,8 +32,11 @@ jobs:
         run: |
           if [ -n "${{ github.event.inputs.tag_name }}" ]; then
             echo "tag=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
-          else
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            PKG_VER=$(node -p "require('./package.json').version")
+            echo "tag=v${PKG_VER}" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up Node.js 22

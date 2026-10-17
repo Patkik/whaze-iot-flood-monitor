@@ -6,6 +6,12 @@ import { playCriticalMusic, stopCriticalMusic } from '../lib/audio';
 import WaterLoadingScreen from './WaterLoadingScreen';
 import { UpdateBanner, UpdateModal } from './UpdateModal';
 import { getCurrentBuildInfo, runUpdateCheck, updaterStore } from '../lib/updater';
+import {
+  getPlatformCapabilities,
+  locationStore,
+  startGpsWatch,
+  syncNativePermissions,
+} from '../lib/platform';
 
 const NAV = [
   { to: '/', label: 'Monitor', icon: 'pulse' },
@@ -82,15 +88,20 @@ export default function Shell() {
   const list = alerts.use();
   const u = updaterStore.use();
   const build = getCurrentBuildInfo();
+  const caps = getPlatformCapabilities();
   const [open, setOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('whaze_water_splash_seen'));
 
-  // Automatically check GitHub for updates on startup when online.
+  // Sync permissions and only auto-check GitHub APK updates on the Android mobile app.
   useEffect(() => {
-    if (navigator.onLine) {
+    void syncNativePermissions();
+    if (locationStore.get().trackMyLocation) {
+      startGpsWatch();
+    }
+    if (caps.autoCheckGithubCommits && navigator.onLine) {
       void runUpdateCheck({ openModal: false });
     }
-  }, []);
+  }, [caps.autoCheckGithubCommits]);
 
   // Critical alert music when status is CRITICAL and not muted.
   useEffect(() => {
@@ -105,6 +116,7 @@ export default function Shell() {
   }, [t.status, t.muted]);
 
   const openUpdater = () => {
+    if (!caps.showOtaUpdater) return;
     if (u.status === 'idle' || u.status === 'error') {
       void runUpdateCheck({ openModal: true });
     } else {
@@ -149,25 +161,35 @@ export default function Shell() {
           ))}
         </nav>
         <div className="mt-auto space-y-2 text-xs text-faint">
-          <button
-            type="button"
-            onClick={openUpdater}
-            className="flex w-full items-center justify-between rounded-lg border border-line bg-bg px-3 py-2 text-left text-xs font-medium text-ink hover:border-brand"
-          >
-            <span className="flex items-center gap-2">
-              <Icon name="download" size={14} className="text-brand" />
-              <span>System update</span>
-            </span>
-            <span className="tnum font-mono text-[11px] text-faint">
-              {u.status === 'available' ? (
-                <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  New
-                </span>
-              ) : (
-                `v${build.version}`
-              )}
-            </span>
-          </button>
+          {caps.showOtaUpdater ? (
+            <button
+              type="button"
+              onClick={openUpdater}
+              className="flex w-full items-center justify-between rounded-lg border border-line bg-bg px-3 py-2 text-left text-xs font-medium text-ink hover:border-brand"
+            >
+              <span className="flex items-center gap-2">
+                <Icon name="download" size={14} className="text-brand" />
+                <span>System update</span>
+              </span>
+              <span className="tnum font-mono text-[11px] text-faint">
+                {u.status === 'available' ? (
+                  <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    New
+                  </span>
+                ) : (
+                  `v${build.version}`
+                )}
+              </span>
+            </button>
+          ) : (
+            <div className="flex w-full items-center justify-between rounded-lg border border-line bg-bg px-3 py-2 text-xs text-muted">
+              <span className="flex items-center gap-2 font-medium text-ink">
+                <Icon name="globe" size={14} className="text-brand" />
+                <span>Web Live</span>
+              </span>
+              <span className="tnum font-mono text-[11px] text-faint">v{build.version}</span>
+            </div>
+          )}
           <ModePill />
           <p>Brgy. Narra and Brgy. Yakal, Francisco Homes, CSJDM, Bulacan</p>
         </div>
@@ -182,17 +204,24 @@ export default function Shell() {
         <div className="hidden text-sm text-muted lg:block">Brgy. Narra and Yakal, CSJDM</div>
         <div className="flex items-center gap-2">
           <span className="hidden sm:block lg:hidden"><ModePill /></span>
-          <button
-            className="btn-quiet relative !min-h-10 !px-2.5 text-xs"
-            onClick={openUpdater}
-            aria-label="Check for GitHub system updates"
-          >
-            <Icon name="download" size={16} />
-            <span className="hidden sm:inline">Update</span>
-            {u.status === 'available' && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-brand ring-2 ring-surface" />
-            )}
-          </button>
+          {caps.showOtaUpdater ? (
+            <button
+              className="btn-quiet relative !min-h-10 !px-2.5 text-xs"
+              onClick={openUpdater}
+              aria-label="Check for GitHub system updates"
+            >
+              <Icon name="download" size={16} />
+              <span className="hidden sm:inline">Update</span>
+              {u.status === 'available' && (
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-brand ring-2 ring-surface" />
+              )}
+            </button>
+          ) : (
+            <span className="hidden items-center gap-1.5 rounded-full border border-line bg-bg px-2.5 py-1 text-[11px] font-medium text-muted sm:inline-flex">
+              <Icon name="globe" size={13} className="text-brand" />
+              Web v{build.version}
+            </span>
+          )}
           <button className="btn-quiet relative !min-h-10 !px-2.5" onClick={() => setOpen(true)} aria-label={`Open alert log, ${list.length} entries`}>
             <Icon name="bell" />
             {list.length > 0 && (
@@ -204,7 +233,7 @@ export default function Shell() {
         </div>
       </header>
 
-      <UpdateBanner />
+      {caps.showOtaUpdater && <UpdateBanner />}
 
       {t.status === 'CRITICAL' && (
         <div role="alert" className="sticky top-14 z-20 border-b border-red-200 bg-crit-tint">
@@ -239,7 +268,7 @@ export default function Shell() {
       </nav>
 
       <AlertsDrawer open={open} onClose={() => setOpen(false)} />
-      <UpdateModal />
+      {caps.showOtaUpdater && <UpdateModal />}
     </div>
   );
 }

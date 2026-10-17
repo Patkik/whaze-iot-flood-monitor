@@ -2,6 +2,16 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Collapsible, Icon, LevelBadge, Section } from '../components/ui';
 import { MOUNT_HEIGHT_CM, CRIT_CM, WARN_CM, accuracyPercent, meanAndSD, type Level } from '../lib/logic';
+import {
+  connectBluetoothEsp32,
+  getPlatformCapabilities,
+  locationStore,
+  permissionsStore,
+  requestBluetoothPermission,
+  requestContactsPermission,
+  requestGpsPermission,
+  setLocationTrackingMode,
+} from '../lib/platform';
 import { BASELINE_TRIALS, applyReading, telemetry, trials, type Trial } from '../lib/stores';
 
 const COPY: Record<Level, { title: string; body: string; tone: string; bar: string }> = {
@@ -95,8 +105,9 @@ function Simulator() {
 
 function Connection() {
   const t = telemetry.use();
+  const perms = permissionsStore.use();
   const [ip, setIp] = useState(t.esp32Ip);
-  const [msg, setMsg] = useState('Using the simulator. Connect a node to read live data.');
+  const [msg, setMsg] = useState('Using the simulator. Connect a node via Wi-Fi IP or Bluetooth.');
 
   async function poll() {
     const host = ip.trim().replace(/^https?:\/\//, '');
@@ -121,27 +132,214 @@ function Connection() {
   }
 
   async function ble() {
-    const nav = navigator as Navigator & { bluetooth?: { requestDevice: (o: object) => Promise<{ name?: string }> } };
-    if (!nav.bluetooth) return setMsg('Web Bluetooth is not supported in this browser.');
-    try {
-      const dev = await nav.bluetooth.requestDevice({ acceptAllDevices: true });
+    setMsg('Checking Bluetooth permission and scanning for ESP32 sensor…');
+    const res = await connectBluetoothEsp32();
+    if (res.connected) {
       telemetry.set({ ...telemetry.get(), mode: 'ESP32 Live' });
-      setMsg(`Paired with ${dev.name || 'ESP32 sensor'}.`);
-    } catch {
-      setMsg('Bluetooth pairing cancelled.');
     }
+    setMsg(res.message);
   }
 
   return (
-    <Collapsible title="Sensor connection" meta="ESP32">
+    <Collapsible
+      title="Sensor connection"
+      meta={`ESP32 · BT ${perms.bluetooth === 'granted' ? 'Granted' : 'Ready'}`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-bg px-3 py-2 text-xs">
+        <span className="flex items-center gap-1.5 font-medium text-ink">
+          <Icon name="bluetooth" size={14} className="text-brand" />
+          Bluetooth Permission:
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+              perms.bluetooth === 'granted'
+                ? 'bg-safe-tint text-safe'
+                : perms.bluetooth === 'denied'
+                ? 'bg-crit-tint text-crit'
+                : 'bg-surface text-muted'
+            }`}
+          >
+            {perms.bluetooth === 'granted' ? 'Granted' : perms.bluetooth === 'denied' ? 'Denied' : 'Needs Permission'}
+          </span>
+        </span>
+        {perms.bluetooth !== 'granted' && (
+          <button
+            type="button"
+            className="btn-quiet !min-h-7 !px-2.5 text-[11px]"
+            onClick={async () => {
+              const ok = await requestBluetoothPermission();
+              setMsg(
+                ok
+                  ? 'Bluetooth permission granted! Tap Bluetooth to pair with ESP32.'
+                  : 'Bluetooth permission not granted.',
+              );
+            }}
+          >
+            Grant Permission
+          </button>
+        )}
+      </div>
+
       <label htmlFor="ip" className="label">ESP32 address</label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input id="ip" className="field font-mono" value={ip} onChange={(e) => setIp(e.target.value)} inputMode="decimal" />
         <button className="btn-primary" onClick={poll}>Connect</button>
-        <button className="btn-quiet" onClick={ble}>Bluetooth</button>
+        <button className="btn-quiet" onClick={ble}>
+          <Icon name="bluetooth" size={15} /> Bluetooth
+        </button>
       </div>
       <p className="mt-3 text-[13px] text-muted" role="status">{msg}</p>
     </Collapsible>
+  );
+}
+
+function PermissionsAndPlatformCard() {
+  const perms = permissionsStore.use();
+  const loc = locationStore.use();
+  const caps = getPlatformCapabilities();
+  const [statusNote, setStatusNote] = useState('');
+
+  const badgeClass = (state: 'granted' | 'prompt' | 'denied') =>
+    state === 'granted'
+      ? 'bg-safe-tint text-safe border-green-200'
+      : state === 'denied'
+      ? 'bg-crit-tint text-crit border-red-200'
+      : 'bg-bg text-muted border-line';
+
+  const badgeText = (state: 'granted' | 'prompt' | 'denied') =>
+    state === 'granted' ? 'Granted' : state === 'denied' ? 'Denied' : 'Request';
+
+  return (
+    <Section
+      title="Permissions & platform"
+      hint={
+        caps.isNative
+          ? 'Android App Mode: Uses native OS permissions (GPS, Contacts, Bluetooth) & GitHub OTA APK updates.'
+          : 'Web Browser Mode: Always up to date via web hosting; uses browser Geolocation, Contacts & Web Bluetooth.'
+      }
+      action={
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-bg px-2.5 py-1 text-[11px] font-semibold text-ink">
+          <Icon name={caps.isNative ? 'smartphone' : 'globe'} size={13} className="text-brand" />
+          {caps.isNative ? 'Android App' : 'Web Page'}
+        </span>
+      }
+    >
+      <div className="space-y-2.5">
+        {/* 1. Location GPS & On/Off Tracking Switch */}
+        <div className="rounded-lg border border-line p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Icon name="locate" size={16} className="text-brand shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-ink">Location GPS & Tracking</p>
+                <p className="text-[11px] text-muted truncate">
+                  {loc.trackMyLocation
+                    ? loc.gpsCoords
+                      ? `Tracking Live GPS (${loc.gpsCoords[0].toFixed(4)}, ${loc.gpsCoords[1].toFixed(4)})`
+                      : 'Acquiring live GPS fix…'
+                    : `Using Custom Location (${loc.customLabel})`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = await requestGpsPermission();
+                  setStatusNote(
+                    ok
+                      ? 'Location GPS permission granted.'
+                      : 'Location GPS permission denied or unavailable.',
+                  );
+                }}
+                className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${badgeClass(perms.location)}`}
+              >
+                {badgeText(perms.location)}
+              </button>
+              <label
+                className="relative inline-flex cursor-pointer items-center"
+                title="Toggle Track My Location (ON) or Custom Location (OFF)"
+              >
+                <input
+                  type="checkbox"
+                  checked={loc.trackMyLocation}
+                  onChange={async (e) => {
+                    const next = e.target.checked;
+                    const ok = await setLocationTrackingMode(next);
+                    setStatusNote(
+                      next
+                        ? ok
+                          ? 'Switched to Track My Location (Live GPS).'
+                          : 'GPS unavailable; staying on Custom Location.'
+                        : 'Switched to Use Custom Location.',
+                    );
+                  }}
+                  className="peer sr-only"
+                />
+                <div className="peer h-5 w-9 rounded-full bg-line peer-checked:bg-brand peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Contacts Permission */}
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-line p-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon name="users" size={16} className="text-brand shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-ink">Contacts Permission</p>
+              <p className="text-[11px] text-muted truncate">
+                For importing household & family SOS numbers
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              const ok = await requestContactsPermission();
+              setStatusNote(
+                ok ? 'Contacts permission granted.' : 'Contacts permission denied.',
+              );
+            }}
+            className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badgeClass(perms.contacts)}`}
+          >
+            {badgeText(perms.contacts)}
+          </button>
+        </div>
+
+        {/* 3. Bluetooth Permission */}
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-line p-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon name="bluetooth" size={16} className="text-brand shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-ink">Bluetooth Permission</p>
+              <p className="text-[11px] text-muted truncate">
+                For pairing directly with the ESP32 flood sensor
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              const ok = await requestBluetoothPermission();
+              setStatusNote(
+                ok
+                  ? 'Bluetooth permission granted.'
+                  : 'Bluetooth permission denied or unsupported in this browser.',
+              );
+            }}
+            className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badgeClass(perms.bluetooth)}`}
+          >
+            {badgeText(perms.bluetooth)}
+          </button>
+        </div>
+
+        {statusNote && (
+          <p className="rounded-lg bg-bg px-3 py-2 text-xs text-muted" role="status">
+            {statusNote}
+          </p>
+        )}
+      </div>
+    </Section>
   );
 }
 
@@ -152,8 +350,10 @@ function trialTier(sensor: number): Trial['tier'] {
 function Calibration() {
   const rows = trials.use();
   const t = telemetry.use();
+  const caps = getPlatformCapabilities();
   const [actual, setActual] = useState('12.0');
   const [sensor, setSensor] = useState('12.1');
+  const [exportMsg, setExportMsg] = useState('');
 
   const acc = meanAndSD(rows.map((r) => accuracyPercent(r.actualCm, r.sensorCm)));
   const tiers = (['Low', 'Moderate', 'Critical'] as const).map((tier) => ({
@@ -179,17 +379,40 @@ function Calibration() {
     ]);
   }
 
-  function csv() {
+  async function csv() {
     const head = 'Trial,Tier,Actual_cm,Sensor_cm,Error_cm,Accuracy_pct,Latency_ms,Output';
     const body = rows.map((r) =>
       [r.id, r.tier, r.actualCm, r.sensorCm, Math.abs(r.actualCm - r.sensorCm).toFixed(2), accuracyPercent(r.actualCm, r.sensorCm).toFixed(2), r.latencyMs, `"${r.output}"`].join(','),
     );
-    const url = URL.createObjectURL(new Blob([[head, ...body].join('\n')], { type: 'text/csv' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'whaze_sensor_trials.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    const csvText = [head, ...body].join('\n');
+
+    if (caps.isNative && typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Whaze Sensor Trials CSV',
+          text: csvText,
+        });
+        setExportMsg('Shared CSV data via Android share sheet.');
+        return;
+      } catch {
+        // Fallback to clipboard or download
+      }
+    }
+
+    try {
+      const url = URL.createObjectURL(new Blob([csvText], { type: 'text/csv' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'whaze_sensor_trials.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportMsg('Downloaded whaze_sensor_trials.csv.');
+    } catch {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(csvText);
+        setExportMsg('Copied CSV data to clipboard.');
+      }
+    }
   }
 
   return (
@@ -233,9 +456,14 @@ function Calibration() {
         <button className="btn-primary self-end" onClick={add}>Log trial</button>
       </div>
 
-      <div className="mb-2 flex justify-end gap-2">
-        <button className="btn-quiet !min-h-9 text-xs" onClick={() => trials.set(BASELINE_TRIALS)}>Reset</button>
-        <button className="btn-quiet !min-h-9 text-xs" onClick={csv}><Icon name="download" size={14} /> CSV</button>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-xs text-muted">{exportMsg}</span>
+        <div className="flex gap-2">
+          <button className="btn-quiet !min-h-9 text-xs" onClick={() => trials.set(BASELINE_TRIALS)}>Reset</button>
+          <button className="btn-quiet !min-h-9 text-xs" onClick={() => void csv()}>
+            <Icon name="download" size={14} /> {caps.isNative ? 'Share / Export CSV' : 'Download CSV'}
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto rounded-lg border border-line">
         <table className="w-full min-w-[520px] text-left text-[13px]">
@@ -333,6 +561,7 @@ export default function Monitor() {
 
       <div className="space-y-4">
         <Simulator />
+        <PermissionsAndPlatformCard />
         <Connection />
         <Calibration />
       </div>
