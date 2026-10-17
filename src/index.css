@@ -27,10 +27,25 @@
 }
 
 @layer base {
+  :root {
+    /* Capacitor 8 SystemBars (insetsHandling: "css") injects --safe-area-inset-* on Android;
+       browsers/iOS expose env(). Use whichever is larger so the header clears the status bar & camera cutout. */
+    --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+    --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+    --sal: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+    --sar: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  }
+  :root.is-native-android {
+    --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--android-cutout-top, 32px));
+    --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px), var(--android-nav-bottom, 12px));
+  }
   html,
   body,
   #root {
     min-height: 100%;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
   }
   body {
     background: var(--color-bg);
@@ -38,8 +53,9 @@
     font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.5;
-    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    padding-left: var(--sal);
+    padding-right: var(--sar);
   }
   :focus-visible {
     outline: 2px solid var(--color-brand);

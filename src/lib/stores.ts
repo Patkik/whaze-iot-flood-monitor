@@ -55,18 +55,167 @@ export function pushAlert(level: Level, title: string, message: string, waterCm:
   alerts.set((prev) => [item, ...prev].slice(0, 30));
 }
 
-/** Apply a water reading (simulated or live), derive status and log transitions. */
-export function applyReading(waterCm: number, floatSwitch: boolean, mode: ConnectionMode, latencyMs?: number) {
+const SYNC_TOPIC = 'whaze_flood_ews_telemetry_sync_csjdm';
+const SYNC_URL = `https://ntfy.sh/${SYNC_TOPIC}`;
+const CLIENT_ID = `whaze-${Math.random().toString(36).slice(2, 10)}`;
+
+interface SyncPayload {
+  waterCm: number;
+  floatSwitch: boolean;
+  mode: ConnectionMode;
+  latencyMs?: number;
+  ts: number;
+  sender: string;
+}
+
+let lastAppliedTs = 0;
+let publishTimer: ReturnType<typeof setTimeout> | null = null;
+let bc: BroadcastChannel | null = null;
+
+function applyIncomingPayload(payload: SyncPayload) {
+  if (!payload || typeof payload.waterCm !== 'number') return;
+  if (payload.sender === CLIENT_ID) return;
+  if (payload.ts && payload.ts <= lastAppliedTs) return;
+  if (payload.ts) lastAppliedTs = payload.ts;
+  applyReading(payload.waterCm, Boolean(payload.floatSwitch), payload.mode || 'Simulated Mode', payload.latencyMs, true);
+}
+
+function broadcastReading(waterCm: number, floatSwitch: boolean, mode: ConnectionMode, latencyMs: number) {
+  const ts = Date.now();
+  lastAppliedTs = Math.max(lastAppliedTs, ts);
+  const payload: SyncPayload = {
+    waterCm,
+    floatSwitch,
+    mode,
+    latencyMs,
+    ts,
+    sender: CLIENT_ID,
+  };
+
+  try {
+    if (!bc && typeof BroadcastChannel !== 'undefined') {
+      bc = new BroadcastChannel('whaze_telemetry_sync_v1');
+    }
+    bc?.postMessage(payload);
+  } catch {
+    // ignore BroadcastChannel errors
+  }
+
+  if (publishTimer) clearTimeout(publishTimer);
+  publishTimer = setTimeout(() => {
+    if (typeof fetch === 'undefined') return;
+    fetch(SYNC_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }).catch(() => {
+      // ignore offline error
+    });
+  }, 180);
+}
+
+/**
+ * Starts real-time simulator water depth synchronization across all open Web and Mobile App instances.
+ */
+export function startTelemetrySync(): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  let stopped = false;
+  let es: EventSource | null = null;
+
+  // 1. Same-device cross-tab BroadcastChannel
+  try {
+    if (!bc && typeof BroadcastChannel !== 'undefined') {
+      bc = new BroadcastChannel('whaze_telemetry_sync_v1');
+    }
+    if (bc) {
+      bc.onmessage = (ev) => {
+        if (!stopped && ev?.data) applyIncomingPayload(ev.data as SyncPayload);
+      };
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. Fetch latest state from cloud relay on startup & periodic poll fallback
+  const pollLatest = async () => {
+    if (stopped || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+    try {
+      const res = await fetch(`${SYNC_URL}/json?poll=1&since=12h`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const text = await res.text();
+      const lines = text.trim().split('\n').filter(Boolean);
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const evt = JSON.parse(lines[i]);
+          if (evt?.event === 'message' && evt.message) {
+            const data = JSON.parse(evt.message) as SyncPayload;
+            if (typeof data?.waterCm === 'number') {
+              applyIncomingPayload(data);
+              break;
+            }
+          }
+        } catch {
+          // continue
+        }
+      }
+    } catch {
+      // ignore offline
+    }
+  };
+
+  void pollLatest();
+  const pollInterval = window.setInterval(pollLatest, 3500);
+
+  // 3. Real-time Server-Sent Events (SSE) stream for instant push across Web <-> Mobile App
+  try {
+    if (typeof EventSource !== 'undefined') {
+      es = new EventSource(`${SYNC_URL}/sse`);
+      es.onmessage = (ev) => {
+        if (stopped || !ev?.data) return;
+        try {
+          const parsed = JSON.parse(ev.data);
+          const rawMsg = parsed?.message ?? ev.data;
+          const data = typeof rawMsg === 'string' ? (JSON.parse(rawMsg) as SyncPayload) : (rawMsg as SyncPayload);
+          applyIncomingPayload(data);
+        } catch {
+          // ignore parse error
+        }
+      };
+    }
+  } catch {
+    // ignore SSE error
+  }
+
+  return () => {
+    stopped = true;
+    window.clearInterval(pollInterval);
+    try {
+      es?.close();
+    } catch {
+      // ignore
+    }
+  };
+}
+
+/** Apply a water reading (simulated or live), derive status, log transitions, and sync across all connected apps. */
+export function applyReading(
+  waterCm: number,
+  floatSwitch: boolean,
+  mode: ConnectionMode,
+  latencyMs?: number,
+  fromRemoteSync = false,
+) {
   const prev = telemetry.get();
   const water = Math.max(0, Math.min(MOUNT_HEIGHT_CM, waterCm));
   const status = statusFor(water, floatSwitch);
+  const resolvedLatency = latencyMs ?? Math.floor(38 + (water % 9));
   telemetry.set({
     ...prev,
     waterCm: water,
     floatSwitch,
     status,
     mode,
-    latencyMs: latencyMs ?? Math.floor(38 + (water % 9)),
+    latencyMs: resolvedLatency,
   });
   if (status !== prev.status) {
     if (status === 'CRITICAL')
@@ -74,6 +223,9 @@ export function applyReading(waterCm: number, floatSwitch: boolean, mode: Connec
     else if (status === 'WARNING')
       pushAlert('WARNING', 'Water rising', `Water at ${water.toFixed(1)} cm. Prepare your go-bag.`, water);
     else pushAlert('SAFE', 'Level back to normal', `Water receded to ${water.toFixed(1)} cm.`, water);
+  }
+  if (!fromRemoteSync) {
+    broadcastReading(water, floatSwitch, mode, resolvedLatency);
   }
 }
 

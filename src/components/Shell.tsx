@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { Icon, LevelBadge } from './ui';
-import { alerts, telemetry } from '../lib/stores';
+import { alerts, startTelemetrySync, telemetry } from '../lib/stores';
 import { playCriticalMusic, stopCriticalMusic } from '../lib/audio';
 import WaterLoadingScreen from './WaterLoadingScreen';
 import { UpdateBanner, UpdateModal } from './UpdateModal';
@@ -54,7 +54,7 @@ function AlertsDrawer({ open, onClose }: { open: boolean; onClose: () => void })
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-ink/40" onClick={onClose} role="dialog" aria-modal="true" aria-label="Alert log">
-      <div className="flex h-full w-full max-w-sm flex-col bg-surface" onClick={(e) => e.stopPropagation()}>
+      <div className="flex h-full w-full max-w-sm flex-col bg-surface pt-[var(--sat)] pb-[var(--sab)]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
             <h2 className="text-[15px] font-semibold">Alert log</h2>
@@ -92,16 +92,25 @@ export default function Shell() {
   const [open, setOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('whaze_water_splash_seen'));
 
-  // Sync permissions and only auto-check GitHub APK updates on the Android mobile app.
+  // Sync permissions, simulator water depth across apps, and auto-check APK updates on Android.
   useEffect(() => {
+    if (caps.isNative) {
+      document.documentElement.classList.add('is-native-android');
+    } else {
+      document.documentElement.classList.remove('is-native-android');
+    }
     void syncNativePermissions();
+    const stopSync = startTelemetrySync();
     if (locationStore.get().trackMyLocation) {
       startGpsWatch();
     }
     if (caps.autoCheckGithubCommits && navigator.onLine) {
       void runUpdateCheck({ openModal: false });
     }
-  }, [caps.autoCheckGithubCommits]);
+    return () => {
+      stopSync();
+    };
+  }, [caps.autoCheckGithubCommits, caps.isNative]);
 
   // Critical alert music when status is CRITICAL and not muted.
   useEffect(() => {
@@ -125,7 +134,7 @@ export default function Shell() {
   };
 
   return (
-    <div className="min-h-screen lg:pl-60">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip lg:pl-60">
       {/* Water-inspired splash/loading screen */}
       {showSplash && (
         <WaterLoadingScreen
@@ -138,7 +147,7 @@ export default function Shell() {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-surface p-4 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-surface p-4 pt-[calc(1rem+var(--sat))] lg:flex">
         <Link to="/" className="mb-6 flex items-center gap-3">
           <img src="/logo.png" alt="Whaze" className="h-10 w-10 object-contain drop-shadow-sm" />
           <div className="leading-tight">
@@ -196,7 +205,7 @@ export default function Shell() {
       </aside>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur lg:px-8">
+      <header className="sticky top-0 z-30 flex h-[calc(3.5rem+var(--sat))] items-center justify-between border-b border-line bg-surface/95 px-4 pt-[var(--sat)] backdrop-blur lg:px-8">
         <Link to="/" className="flex items-center gap-2 lg:hidden">
           <img src="/logo.png" alt="Whaze" className="h-8 w-8 object-contain drop-shadow-sm" />
           <span className="text-[15px] font-semibold">Whaze</span>
@@ -236,7 +245,7 @@ export default function Shell() {
       {caps.showOtaUpdater && <UpdateBanner />}
 
       {t.status === 'CRITICAL' && (
-        <div role="alert" className="sticky top-14 z-20 border-b border-red-200 bg-crit-tint">
+        <div role="alert" className="sticky top-[calc(3.5rem+var(--sat))] z-20 border-b border-red-200 bg-crit-tint">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-8">
             <p className="text-sm font-semibold text-crit">
               Critical water level: <span className="tnum font-mono">{t.waterCm.toFixed(1)} cm</span>. Evacuate now.
@@ -246,12 +255,12 @@ export default function Shell() {
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-6xl px-4 pt-5 pb-28 lg:px-8 lg:pb-12">
+      <main className="mx-auto w-full min-w-0 max-w-6xl px-4 pt-5 pb-[calc(7rem+var(--sab))] lg:px-8 lg:pb-12">
         <Outlet />
       </main>
 
       {/* Mobile bottom tabs */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Primary">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-line bg-surface pb-[var(--sab)] lg:hidden" aria-label="Primary">
         {NAV.map((n) => (
           <NavLink
             key={n.to}

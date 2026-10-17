@@ -125,7 +125,7 @@ export const PRESET_CUSTOM_LOCATIONS: { label: string; coords: LatLng; zone: str
   },
 ];
 
-export const locationStore = createStore<LocationTrackingState>('whaze.location.v1', {
+export const locationStore = createStore<LocationTrackingState>('whaze.location.v2', {
   trackMyLocation: false,
   gpsCoords: null,
   gpsAccuracy: null,

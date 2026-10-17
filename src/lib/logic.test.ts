@@ -74,8 +74,23 @@ describe('Flood Zone and Route Avoidance', () => {
       // Warning/Critical mode: High-ground bypass route strictly clears the 150m flood zone
       const avoid = getShelterRoute(s, true);
       const clearance = minDistanceToPath(COORDS.hazard, avoid.path);
-      expect(clearance).toBeGreaterThan(criticalFlood.radius);
+      expect(clearance).toBeGreaterThan(criticalFlood.avoidRadius);
     }
   });
+
+  it('reroutes outside the 150m critical flood radius (and 170m buffer) for both preset node and custom pins', async () => {
+    const { SHELTERS, COORDS, fetchFootRoute, getFloodZone } = await import('./geo');
+    const criticalFlood = getFloodZone(36, true);
+
+    const routeFromNode = await fetchFootRoute(COORDS.node, SHELTERS[0].coords, 36, true, true);
+    expect(routeFromNode.isDetour).toBe(true);
+    expect(routeFromNode.minClearance).toBeGreaterThanOrEqual(criticalFlood.avoidRadius);
+
+    const customPin: [number, number] = [14.8074, 121.0578];
+    const routeFromCustom = await fetchFootRoute(customPin, SHELTERS[0].coords, 36, true, true);
+    expect(routeFromCustom.isDetour).toBe(true);
+    expect(routeFromCustom.minClearance).toBeGreaterThanOrEqual(criticalFlood.avoidRadius);
+  });
 });
+
 

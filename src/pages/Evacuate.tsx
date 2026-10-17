@@ -19,7 +19,7 @@ import {
   setCustomLocation,
   setLocationTrackingMode,
 } from '../lib/platform';
-import { telemetry } from '../lib/stores';
+import { applyReading, telemetry } from '../lib/stores';
 
 export default function Evacuate() {
   const t = telemetry.use();
@@ -33,7 +33,8 @@ export default function Evacuate() {
   const shelter = SHELTERS.find((s) => s.id === shelterId)!;
   const color = shelter.role === 'Primary' ? '#15803d' : '#1d4ed8';
   const flood = getFloodZone(t.waterCm, t.floatSwitch);
-  const baseRoute = getShelterRoute(shelter, flood.isWarningOrHigher);
+  const shouldAvoid = avoidFloods && flood.isWarningOrHigher;
+  const baseRoute = getShelterRoute(shelter, shouldAvoid);
 
   const activeLoc = resolveActiveLocation(loc);
   const origin = activeLoc.coords;
@@ -90,7 +91,7 @@ export default function Evacuate() {
   const isInsideFlood = flood.isWarningOrHigher
     ? (live ? live.isInsideFlood : haversineMeters(origin, flood.center) < flood.radius)
     : false;
-  const isDetour = live ? live.isDetour : false;
+  const isDetour = live ? live.isDetour : shouldAvoid;
 
   async function handleToggleGps(checked: boolean) {
     if (checked) {
@@ -119,7 +120,7 @@ export default function Evacuate() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 max-w-full space-y-4 overflow-x-hidden">
       <div>
         <h1 className="text-xl font-semibold sm:text-2xl">Evacuation route</h1>
         <p className="text-[13px] text-muted">
@@ -127,10 +128,10 @@ export default function Evacuate() {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="space-y-3">
-          <div className="card !p-2">
-            <div className="h-[52vh] min-h-[320px] lg:h-[560px]">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="min-w-0 space-y-3">
+          <div className="card overflow-hidden !p-2">
+            <div className="h-[52vh] min-h-[320px] w-full overflow-hidden rounded-lg lg:h-[560px]">
               <RouteMap
                 path={path}
                 color={color}
@@ -140,6 +141,7 @@ export default function Evacuate() {
                 destLabel={shelter.short}
                 level={t.status}
                 waterCm={t.waterCm}
+                floatSwitch={t.floatSwitch}
                 minClearance={clearance}
                 isDetour={isDetour}
                 isInsideFlood={isInsideFlood}
@@ -154,21 +156,21 @@ export default function Evacuate() {
           </div>
 
           {/* Key telemetry stats including Flood Clearance */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="card !p-3">
-              <p className="eyebrow">Destination</p>
+          <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="card min-w-0 !p-3">
+              <p className="eyebrow truncate">Destination</p>
               <p className="tnum truncate text-[15px] font-semibold">{shelter.short}</p>
             </div>
-            <div className="card !p-3">
-              <p className="eyebrow">Walking</p>
+            <div className="card min-w-0 !p-3">
+              <p className="eyebrow truncate">Walking</p>
               <p className="tnum truncate text-[15px] font-semibold">{distance}</p>
             </div>
-            <div className="card !p-3">
-              <p className="eyebrow">Time</p>
+            <div className="card min-w-0 !p-3">
+              <p className="eyebrow truncate">Time</p>
               <p className="tnum truncate text-[15px] font-semibold">{eta}</p>
             </div>
-            <div className="card !p-3">
-              <p className="eyebrow">Flood Clearance</p>
+            <div className="card min-w-0 !p-3">
+              <p className="eyebrow truncate">Flood Clearance</p>
               <p
                 className={`tnum truncate text-[15px] font-semibold ${
                   isInsideFlood
@@ -186,11 +188,57 @@ export default function Evacuate() {
               </p>
             </div>
           </div>
+
+          {/* Synced Simulator Water Depth Quick Control */}
+          <div className="card min-w-0 space-y-2.5 !p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-safe animate-pulse" />
+                <p className="text-xs font-semibold truncate">
+                  Synced Simulator Water Depth:{' '}
+                  <span className="tnum font-mono text-brand">{t.waterCm.toFixed(1)} cm</span>
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: 'Normal (8cm)', cm: 8, fs: false },
+                  { label: 'Warning (22cm)', cm: 22, fs: false },
+                  { label: 'Critical (36cm)', cm: 36, fs: true },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => applyReading(preset.cm, preset.fs, 'Simulated Mode')}
+                    className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${
+                      Math.round(t.waterCm) === preset.cm
+                        ? 'border-brand bg-brand-tint text-brand'
+                        : 'border-line bg-bg text-ink hover:border-brand/50'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={45}
+              step={0.5}
+              value={t.waterCm}
+              onChange={(e) => {
+                const cm = Number(e.target.value);
+                applyReading(cm, cm >= 30 ? true : t.floatSwitch, 'Simulated Mode');
+              }}
+              aria-label="Simulator water depth slider"
+              className="w-full"
+            />
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {/* Location GPS Tracking vs Custom Location Switch */}
-          <div className="card space-y-3 !p-3.5">
+          <div className="card min-w-0 space-y-3 overflow-hidden !p-3.5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div

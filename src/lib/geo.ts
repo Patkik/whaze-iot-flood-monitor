@@ -1,7 +1,7 @@
 export type LatLng = [number, number];
 
 export const COORDS = {
-  node: [14.80828, 121.05862] as LatLng, // Sunga Residence, Phase G3, Brgy. Yakal (Sensor Node)
+  node: [14.80828, 121.05882] as LatLng, // Sunga Residence, Phase G3, Brgy. Yakal (Sensor Node)
   fcpc: [14.81062, 121.06133] as LatLng, // First City Providential College
   narra: [14.81136, 121.05965] as LatLng, // Brgy. Narra covered court
   yakal: [14.80693, 121.06084] as LatLng, // Brgy. Yakal evacuation center
@@ -86,6 +86,62 @@ export function minDistanceToPath(center: LatLng, path: LatLng[]): number {
   return minD;
 }
 
+/** Total polyline length in meters */
+export function pathLengthMeters(path: LatLng[]): number {
+  let total = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    total += haversineMeters(path[i], path[i + 1]);
+  }
+  return Math.round(total);
+}
+
+/**
+ * Projects any infringing segments of a walking path outward along the elevated eastern ridge
+ * so the route strictly clears `avoidRadius` around `center` during Warning and Critical floods.
+ */
+export function deflectPathAroundFloodZone(
+  path: LatLng[],
+  center: LatLng,
+  avoidRadius: number,
+): LatLng[] {
+  if (path.length < 2 || avoidRadius <= 0) return path;
+
+  // 1. Densify segments (~18m spacing) so straight chords cannot slice through the flood circle
+  const dense: LatLng[] = [path[0]];
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = path[i];
+    const b = path[i + 1];
+    const segLen = haversineMeters(a, b);
+    const steps = Math.max(1, Math.ceil(segLen / 18));
+    for (let s = 1; s <= steps; s++) {
+      const t = s / steps;
+      dense.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+    }
+  }
+
+  const targetRadius = avoidRadius + 10; // extra margin outside dashed avoidance ring
+
+  // 2. Push any intermediate vertex closer than targetRadius outward toward the eastern high ground
+  return dense.map((pt, idx) => {
+    if (idx === 0 || idx === dense.length - 1) return pt;
+    const dist = haversineMeters(center, pt);
+    if (dist >= targetRadius) return pt;
+
+    let dLat = pt[0] - center[0];
+    let dLng = pt[1] - center[1];
+    // Steer eastward toward high ground in Phase G3 / Francisco Ave.
+    if (dLng < 0.0003) {
+      dLng = Math.abs(dLng) + 0.0005;
+    }
+    const curDist = Math.max(1, haversineMeters(center, [center[0] + dLat, center[1] + dLng]));
+    const scale = targetRadius / curDist;
+    return [
+      Number((center[0] + dLat * scale).toFixed(6)),
+      Number((center[1] + dLng * scale).toFixed(6)),
+    ] as LatLng;
+  });
+}
+
 export interface Shelter {
   id: 'fcpc' | 'narra' | 'yakal';
   name: string;
@@ -124,39 +180,40 @@ export const SHELTERS: Shelter[] = [
     direct: {
       distance: '438 m',
       eta: '5 min',
-      via: 'Phase G3 collector, Francisco Ave.',
+      via: 'Phase G3 lower collector, Francisco Ave.',
       path: [
-        [14.80828, 121.05862],
-        [14.80835, 121.05844],
-        [14.80858, 121.05853],
-        [14.80893, 121.05866],
-        [14.80921, 121.05881],
+        [14.80828, 121.05882],
+        [14.80835, 121.05825],
+        [14.80865, 121.05818],
+        [14.80895, 121.05835],
+        [14.80928, 121.05875],
         [14.80987, 121.05998],
         [14.81062, 121.06133],
       ],
       steps: [
-        'Leave Phase G3 and walk 21 m west to the paved street corner.',
+        'Leave Phase G3 and walk west to the lower collector corner.',
         'Turn right onto the Phase G3 collector (115 m), heading north-east.',
         'Continue onto Francisco Ave. (302 m) toward Brgy. Narra.',
         'Enter the FCPC gate on your right and check in at the ground-floor triage desk.',
       ],
     },
     avoid: {
-      distance: '445 m',
-      eta: '5 min',
-      via: 'Phase G3 elevated bypass, Francisco Ave.',
+      distance: '465 m',
+      eta: '6 min',
+      via: 'Phase G3 eastern high-ground ridge, Francisco Ave.',
       path: [
-        [14.80828, 121.05862],
-        [14.80858, 121.05872],
-        [14.80893, 121.05885],
-        [14.80935, 121.05910],
+        [14.80828, 121.05882],
+        [14.80848, 121.05918],
+        [14.80885, 121.05938],
+        [14.80932, 121.05952],
         [14.80987, 121.05998],
         [14.81062, 121.06133],
       ],
       steps: [
-        '🛡️ Flood Avoidance Active: Warning level reached (≥ 15 cm). Bypassing low-lying creek basin.',
-        'Leave Phase G3 heading north-east along the elevated high-ground collector street.',
-        'Continue onto Francisco Ave. (302 m) on high ground toward Brgy. Narra.',
+        '🛡️ Flood Avoidance Active: Bypassing flooded creek basin via eastern high ground.',
+        'Leave Phase G3 heading east along the elevated subdivision ridge street.',
+        'Follow the upper collector north-east, staying > 180 m clear of the creek basin.',
+        'Turn onto Francisco Ave. (302 m) on high ground toward Brgy. Narra.',
         'Enter the FCPC gate on your right and check in at the ground-floor triage desk.',
       ],
     },
@@ -172,45 +229,43 @@ export const SHELTERS: Shelter[] = [
     direct: {
       distance: '474 m',
       eta: '6 min',
-      via: 'Phase G3 collector, Francisco Ave. North',
+      via: 'Phase G3 lower collector, Francisco Ave. North',
       path: [
-        [14.80828, 121.05862],
-        [14.80835, 121.05844],
-        [14.80858, 121.05853],
-        [14.80893, 121.05866],
-        [14.80921, 121.05881],
+        [14.80828, 121.05882],
+        [14.80835, 121.05825],
+        [14.80865, 121.05818],
+        [14.80895, 121.05835],
+        [14.80928, 121.05875],
         [14.80987, 121.05998],
         [14.81016, 121.05981],
         [14.81051, 121.05962],
         [14.81068, 121.05995],
-        [14.81135, 121.05966],
         [14.81136, 121.05965],
       ],
       steps: [
-        'Leave Phase G3, turn right onto the collector street (249 m).',
+        'Leave Phase G3, turn right onto the lower collector street (249 m).',
         'Turn left at the junction (81 m) heading north toward Francisco Ave.',
         'Turn right onto Francisco Ave. (41 m), then left (82 m) to the covered court.',
       ],
     },
     avoid: {
-      distance: '482 m',
+      distance: '495 m',
       eta: '6 min',
-      via: 'Phase G3 elevated bypass, Francisco Ave. North',
+      via: 'Phase G3 eastern high-ground ridge, Francisco Ave. North',
       path: [
-        [14.80828, 121.05862],
-        [14.80858, 121.05872],
-        [14.80893, 121.05885],
-        [14.80935, 121.05910],
+        [14.80828, 121.05882],
+        [14.80848, 121.05918],
+        [14.80885, 121.05938],
+        [14.80932, 121.05952],
         [14.80987, 121.05998],
         [14.81016, 121.05981],
         [14.81051, 121.05962],
         [14.81068, 121.05995],
-        [14.81135, 121.05966],
         [14.81136, 121.05965],
       ],
       steps: [
-        '🛡️ Flood Avoidance Active: Warning level reached (≥ 15 cm). Bypassing low-lying creek basin.',
-        'Leave Phase G3 heading north-east along the elevated residential street (240 m).',
+        '🛡️ Flood Avoidance Active: Bypassing flooded creek basin via eastern high ground.',
+        'Leave Phase G3 heading east along the elevated residential ridge (240 m).',
         'Follow the high-ground corridor away from the creek basin toward Francisco Ave.',
         'Turn onto Francisco Ave. North (82 m) to reach the Narra covered court command post.',
       ],
@@ -227,74 +282,51 @@ export const SHELTERS: Shelter[] = [
     direct: {
       distance: '595 m',
       eta: '7 min',
-      via: 'Phase F/G subdivision streets',
+      via: 'Phase F/G lower subdivision streets',
       path: [
-        [14.80828, 121.05862],
-        [14.80835, 121.05844],
-        [14.80810, 121.05834],
-        [14.80789, 121.05826],
-        [14.80763, 121.05816],
+        [14.80828, 121.05882],
+        [14.80835, 121.05825],
+        [14.80810, 121.05818],
+        [14.80789, 121.05822],
         [14.80743, 121.05808],
         [14.80694, 121.05802],
-        [14.80686, 121.05818],
-        [14.80681, 121.05830],
         [14.80674, 121.05846],
-        [14.80658, 121.05881],
         [14.80652, 121.05893],
         [14.80618, 121.05927],
         [14.80597, 121.05952],
-        [14.80608, 121.05962],
-        [14.80619, 121.05974],
-        [14.80630, 121.05984],
         [14.80639, 121.05993],
-        [14.80650, 121.06003],
-        [14.80658, 121.06011],
-        [14.80669, 121.06020],
         [14.80685, 121.06035],
-        [14.80699, 121.06048],
-        [14.80711, 121.06060],
         [14.80715, 121.06064],
-        [14.80696, 121.06087],
         [14.80693, 121.06084],
       ],
       steps: [
-        'Leave Phase G3, walk 21 m west and turn left heading south (164 m).',
+        'Leave Phase G3, walk west and turn left heading south (164 m).',
         'Turn left at the subdivision corner (196 m), continuing south-east.',
         'Turn left onto the eastern collector (178 m) toward the barangay hall.',
         'Turn right (36 m) to arrive at the Yakal Evacuation Center.',
       ],
     },
     avoid: {
-      distance: '605 m',
-      eta: '7 min',
+      distance: '615 m',
+      eta: '8 min',
       via: 'Phase F/G elevated eastern ridge',
       path: [
-        [14.80828, 121.05862],
-        [14.80789, 121.05868],
-        [14.80743, 121.05874],
-        [14.80686, 121.05880],
-        [14.80658, 121.05885],
-        [14.80652, 121.05893],
+        [14.80828, 121.05882],
+        [14.80805, 121.05912],
+        [14.80755, 121.05918],
+        [14.80695, 121.05915],
+        [14.80652, 121.05910],
         [14.80618, 121.05927],
         [14.80597, 121.05952],
-        [14.80608, 121.05962],
-        [14.80619, 121.05974],
-        [14.80630, 121.05984],
         [14.80639, 121.05993],
-        [14.80650, 121.06003],
-        [14.80658, 121.06011],
-        [14.80669, 121.06020],
         [14.80685, 121.06035],
-        [14.80699, 121.06048],
-        [14.80711, 121.06060],
         [14.80715, 121.06064],
-        [14.80696, 121.06087],
         [14.80693, 121.06084],
       ],
       steps: [
-        '🛡️ Flood Avoidance Active: Warning level reached (≥ 15 cm). Bypassing low-lying creek basin.',
-        'Leave Phase G3 heading south-east along the upper subdivision street (190 m).',
-        'Follow the eastern collector loop, maintaining safe distance above the creek elevation.',
+        '🛡️ Flood Avoidance Active: Bypassing flooded creek basin via eastern high ground.',
+        'Leave Phase G3 heading south-east along the upper subdivision ridge street (190 m).',
+        'Follow the eastern collector loop, maintaining > 180 m clearance above the creek.',
         'Continue along the paved subdivision avenue (185 m) directly to the Yakal Evacuation Center.',
       ],
     },
@@ -326,146 +358,206 @@ export interface RouteResult {
   isWarningOrHigher: boolean;
 }
 
+const OSRM_BASE = 'https://router.project-osrm.org/route/v1/foot';
+const OSRM_TIMEOUT_MS = 6000;
+
+interface OsrmRoute {
+  distance: number;
+  geometry: { coordinates: number[][] };
+  legs: { steps: { distance: number; name: string; maneuver: { type: string } }[] }[];
+}
+
+const osrmCache = new Map<string, Promise<OsrmRoute | null>>();
+
+function roundCoord(p: LatLng): LatLng {
+  return [Math.round(p[0] * 1e4) / 1e4, Math.round(p[1] * 1e4) / 1e4];
+}
+
+export function clearRouteCache() {
+  osrmCache.clear();
+}
+
+async function osrmRoute(
+  points: LatLng[],
+  fetchImpl: typeof fetch = fetch,
+): Promise<OsrmRoute | null> {
+  const coords = points.map((p) => `${p[1]},${p[0]}`).join(';');
+  const url = `${OSRM_BASE}/${coords}?overview=full&geometries=geojson&steps=true`;
+  const cached = osrmCache.get(url);
+  if (cached) return cached;
+
+  const task = (async () => {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), OSRM_TIMEOUT_MS) : null;
+    try {
+      const res = await fetchImpl(url, ctl ? { signal: ctl.signal } : undefined);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return (data?.routes?.[0] as OsrmRoute) ?? null;
+    } catch {
+      return null;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  })();
+
+  osrmCache.set(url, task);
+  const result = await task;
+  if (!result) osrmCache.delete(url);
+  return result;
+}
+
+const toPath = (r: OsrmRoute): LatLng[] => r.geometry.coordinates.map((c) => [c[1], c[0]] as LatLng);
+
 /**
- * Fetch a street-snapped foot route.
- * CRITICAL RULE: ONLY avoids the flood radius area when reaching WARNING levels (>= 15 cm or float switch).
- * Under normal water conditions (< 15 cm), returns the shortest direct walking path.
+ * Fetch a street-snapped foot route with guaranteed flood-radius rerouting on both Web and Mobile.
+ * - Below Warning level (< 15 cm): uses the direct shortest walking route.
+ * - At Warning (15–29.9 cm, 115m radius) or Critical (>= 30 cm / float switch, 150m radius):
+ *   automatically reroutes around the eastern high-ground corridor outside `flood.avoidRadius`.
  */
 export async function fetchFootRoute(
-  from: LatLng,
-  to: LatLng,
+  fromRaw: LatLng,
+  toRaw: LatLng,
   waterCm = 12,
   userAvoidToggle = true,
   isFloatSwitch = false,
+  fetchImpl: typeof fetch = fetch,
 ): Promise<RouteResult> {
+  const from = roundCoord(fromRaw);
+  const to = roundCoord(toRaw);
   const flood = getFloodZone(waterCm, isFloatSwitch);
   const shouldAvoid = userAvoidToggle && flood.isWarningOrHigher;
 
-  // 1. Fetch direct OSRM foot route
-  const directUrl = `https://router.project-osrm.org/route/v1/foot/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson&steps=true`;
-  const res = await fetch(directUrl);
-  const data = await res.json();
-  const directRoute = data.routes?.[0];
+  const matchedShelter = SHELTERS.find((s) => haversineMeters(toRaw, s.coords) < 35);
+  const isNearDefaultNode = haversineMeters(fromRaw, COORDS.node) < 35;
 
-  if (!directRoute) throw new Error('no route found');
-
-  const directPath: LatLng[] = directRoute.geometry.coordinates.map((c: number[]) => [c[1], c[0]]);
-  const directClearance = minDistanceToPath(COORDS.hazard, directPath);
-
-  // When water depth is below Warning level (< 15 cm), do NOT detour around the radius:
-  if (!shouldAvoid) {
-    return {
-      path: directPath,
-      meters: Math.round(directRoute.distance as number),
-      minutes: Math.max(1, Math.round((directRoute.distance as number) / 80)),
-      minClearance: Math.round(directClearance),
-      isDetour: false,
-      isInsideFlood: false,
-      isWarningOrHigher: false,
-      steps: parseSteps(directRoute.legs[0].steps),
-    };
-  }
-
-  // Water has reached WARNING or CRITICAL levels (>= 15 cm) — activate avoidance engine:
-  const distFromStartToFlood = haversineMeters(from, flood.center);
-  const isInsideFlood = distFromStartToFlood < flood.radius;
-
-  // If the direct path already safely clears the flood radius, no detour is needed:
-  if (directClearance >= flood.avoidRadius) {
-    return {
-      path: directPath,
-      meters: Math.round(directRoute.distance as number),
-      minutes: Math.max(1, Math.round((directRoute.distance as number) / 80)),
-      minClearance: Math.round(directClearance),
-      isDetour: false,
-      isInsideFlood,
-      isWarningOrHigher: true,
-      steps: parseSteps(directRoute.legs[0].steps),
-    };
-  }
-
-  // Direct path infringes the active flood radius during warning levels — calculate high-ground bypass detour:
-  const bypassCandidates: LatLng[] = [
-    [14.8066, 121.0575], // South Ridge (Phase G lower bypass)
-    [14.8058, 121.0580], // Far South elevated street (for wide critical flood radii)
-    [14.8093, 121.0592], // East collector ridge
-    [14.8062, 121.0598], // South-east loop
-    [14.8118, 121.0588], // North-east elevated connector
-  ];
-
-  let bestDetour: { path: LatLng[]; meters: number; clearance: number; steps: string[] } | null = null;
-
-  for (const wp of bypassCandidates) {
-    try {
-      const detourUrl = `https://router.project-osrm.org/route/v1/foot/${from[1]},${from[0]};${wp[1]},${wp[0]};${to[1]},${to[0]}?overview=full&geometries=geojson&steps=true`;
-      const dRes = await fetch(detourUrl);
-      const dData = await dRes.json();
-      const r = dData.routes?.[0];
-      if (r) {
-        const cPath: LatLng[] = r.geometry.coordinates.map((c: number[]) => [c[1], c[0]]);
-        const clearance = minDistanceToPath(flood.center, cPath);
-        if (clearance >= flood.avoidRadius) {
-          if (!bestDetour || r.distance < bestDetour.meters) {
-            const allSteps = [...(r.legs[0]?.steps || []), ...(r.legs[1]?.steps || [])];
-            bestDetour = {
-              path: cPath,
-              meters: Math.round(r.distance),
-              clearance: Math.round(clearance),
-              steps: parseSteps(allSteps),
-            };
-          }
-        }
-      }
-    } catch {
-      // Continue next candidate
+  // For the Phase G3 sensor node to a known shelter, use our verified street corridors
+  // so mobile & web behave identically and never suffer from OSRM rate-limiting or west-snapping.
+  if (isNearDefaultNode && matchedShelter) {
+    if (!shouldAvoid) {
+      const dPath = matchedShelter.direct.path;
+      const meters = pathLengthMeters(dPath) || 438;
+      return {
+        path: dPath,
+        meters,
+        minutes: Math.max(1, Math.round(meters / 80)),
+        minClearance: Math.round(minDistanceToPath(flood.center, dPath)),
+        isDetour: false,
+        isInsideFlood: false,
+        isWarningOrHigher: flood.isWarningOrHigher,
+        steps: matchedShelter.direct.steps,
+      };
+    } else {
+      const aPath = deflectPathAroundFloodZone(
+        matchedShelter.avoid.path,
+        flood.center,
+        flood.avoidRadius,
+      );
+      const meters = pathLengthMeters(aPath) || 465;
+      return {
+        path: aPath,
+        meters,
+        minutes: Math.max(1, Math.round(meters / 80)),
+        minClearance: Math.round(minDistanceToPath(flood.center, aPath)),
+        isDetour: true,
+        isInsideFlood: false,
+        isWarningOrHigher: true,
+        steps: [
+          `🛡️ Flood Avoidance Active: Bypassing ${flood.levelLabel} (${flood.radius} m radius).`,
+          ...matchedShelter.avoid.steps.slice(1),
+        ],
+      };
     }
   }
 
-  if (bestDetour) {
-    const enhancedSteps = [
-      `🛡️ Flood Avoidance Active: Warning level reached (≥ 15 cm). Bypassing ${flood.levelLabel} (${flood.radius} m radius).`,
-      ...bestDetour.steps,
-    ];
+  // Custom pin or Live GPS origin: query OSRM with graceful fallback
+  const distFromStartToFlood = haversineMeters(fromRaw, flood.center);
+  const isInsideFlood = flood.isWarningOrHigher && distFromStartToFlood < flood.radius;
 
+  const directRoute = await osrmRoute([from, to], fetchImpl);
+  const basePath: LatLng[] = directRoute
+    ? toPath(directRoute)
+    : matchedShelter
+      ? [fromRaw, ...(shouldAvoid ? matchedShelter.avoid.path.slice(1) : matchedShelter.direct.path.slice(1))]
+      : [fromRaw, toRaw];
+
+  const baseSteps: string[] = directRoute
+    ? parseSteps(directRoute.legs[0].steps)
+    : matchedShelter
+      ? (shouldAvoid ? matchedShelter.avoid.steps : matchedShelter.direct.steps)
+      : ['Proceed along the elevated street corridor toward the evacuation shelter.'];
+
+  const directClearance = minDistanceToPath(flood.center, basePath);
+
+  if (!shouldAvoid) {
+    const meters = directRoute ? Math.round(directRoute.distance) : pathLengthMeters(basePath);
     return {
-      path: bestDetour.path,
-      meters: bestDetour.meters,
-      minutes: Math.max(1, Math.round(bestDetour.meters / 80)),
-      minClearance: bestDetour.clearance,
-      isDetour: true,
-      isInsideFlood,
-      isWarningOrHigher: true,
-      steps: enhancedSteps,
+      path: basePath,
+      meters,
+      minutes: Math.max(1, Math.round(meters / 80)),
+      minClearance: Math.round(directClearance),
+      isDetour: false,
+      isInsideFlood: false,
+      isWarningOrHigher: flood.isWarningOrHigher,
+      steps: baseSteps,
     };
   }
 
   if (isInsideFlood) {
-    const escapeSteps = [
-      `⚠️ CAUTION: Your location is inside the active ${flood.radius} m flood radius.`,
-      'Move immediately away from the low-lying creek toward higher ground on Francisco Ave.',
-      ...parseSteps(directRoute.legs[0].steps),
-    ];
+    const meters = directRoute ? Math.round(directRoute.distance) : pathLengthMeters(basePath);
     return {
-      path: directPath,
-      meters: Math.round(directRoute.distance as number),
-      minutes: Math.max(1, Math.round((directRoute.distance as number) / 80)),
+      path: basePath,
+      meters,
+      minutes: Math.max(1, Math.round(meters / 80)),
       minClearance: Math.round(directClearance),
       isDetour: false,
       isInsideFlood: true,
       isWarningOrHigher: true,
-      steps: escapeSteps,
+      steps: [
+        `⚠️ CAUTION: Your location is inside the active ${flood.radius} m flood radius.`,
+        'Move immediately away from the low-lying creek toward higher ground on Francisco Ave.',
+        ...baseSteps,
+      ],
     };
   }
 
+  if (directClearance >= flood.avoidRadius) {
+    const meters = directRoute ? Math.round(directRoute.distance) : pathLengthMeters(basePath);
+    return {
+      path: basePath,
+      meters,
+      minutes: Math.max(1, Math.round(meters / 80)),
+      minClearance: Math.round(directClearance),
+      isDetour: false,
+      isInsideFlood: false,
+      isWarningOrHigher: true,
+      steps: baseSteps,
+    };
+  }
+
+  // Try an eastern high-ground waypoint via OSRM first, then guarantee clearance via geometric deflection
+  const eastWaypoint: LatLng = [14.80885, 121.05955];
+  const detourRoute = await osrmRoute([from, eastWaypoint, to], fetchImpl);
+  const candidatePath = detourRoute ? toPath(detourRoute) : basePath;
+  const safePath = deflectPathAroundFloodZone(candidatePath, flood.center, flood.avoidRadius);
+  const safeMeters = pathLengthMeters(safePath);
+  const safeClearance = Math.round(minDistanceToPath(flood.center, safePath));
+  const rawSteps = detourRoute
+    ? parseSteps([...(detourRoute.legs[0]?.steps || []), ...(detourRoute.legs[1]?.steps || [])])
+    : baseSteps;
+
   return {
-    path: directPath,
-    meters: Math.round(directRoute.distance as number),
-    minutes: Math.max(1, Math.round((directRoute.distance as number) / 80)),
-    minClearance: Math.round(directClearance),
-    isDetour: false,
+    path: safePath,
+    meters: safeMeters,
+    minutes: Math.max(1, Math.round(safeMeters / 80)),
+    minClearance: safeClearance,
+    isDetour: true,
     isInsideFlood: false,
     isWarningOrHigher: true,
-    steps: parseSteps(directRoute.legs[0].steps),
+    steps: [
+      `🛡️ Flood Avoidance Active: Warning level reached (≥ 15 cm). Bypassing ${flood.levelLabel} (${flood.radius} m radius).`,
+      ...rawSteps,
+    ],
   };
 }
 

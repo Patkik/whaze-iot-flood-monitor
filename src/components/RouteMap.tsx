@@ -44,6 +44,7 @@ export interface RouteMapProps {
   destLabel: string;
   level: Level;
   waterCm: number;
+  floatSwitch?: boolean;
   minClearance: number;
   isDetour: boolean;
   isInsideFlood: boolean;
@@ -78,7 +79,7 @@ function Layers(p: RouteMapProps) {
     g.clearLayers();
     cancelAnimationFrame(raf.current);
 
-    const flood = getFloodZone(p.waterCm);
+    const flood = getFloodZone(p.waterCm, p.floatSwitch);
 
     if (flood.isWarningOrHigher) {
       // 1. Inundated core flood basin (Radius scales with water level: 115m Warning -> 150m Critical)
@@ -198,16 +199,16 @@ function Layers(p: RouteMapProps) {
     bounds.extend(flood.center);
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
     return () => cancelAnimationFrame(raf.current);
-  }, [map, p.path, p.color, p.origin, p.originLabel, p.level, p.waterCm]);
+  }, [map, p.path, p.color, p.origin, p.originLabel, p.level, p.waterCm, p.floatSwitch]);
 
   return null;
 }
 
 export default function RouteMap(props: RouteMapProps) {
-  const flood = getFloodZone(props.waterCm);
+  const flood = getFloodZone(props.waterCm, props.floatSwitch);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full overflow-hidden rounded-lg">
       <MapContainer
         center={[14.8095, 121.0598]}
         zoom={16}
