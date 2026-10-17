@@ -58,11 +58,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Sync Capacitor Android Project
-        run: npx cap sync android
-
       - name: Make Gradlew Executable
         run: chmod +x android/gradlew
+
+      - name: Sync Capacitor Android Project
+        run: npx cap sync android
 
       - name: Build Android APK
         working-directory: ./android
