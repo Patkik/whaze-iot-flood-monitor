@@ -10,7 +10,8 @@
     "test": "vitest run",
     "cap:sync": "npx cap sync android",
     "cap:open": "npx cap open android",
-    "build:android": "npm run build && npx cap sync android"
+    "build:android": "npm run build && npx cap sync android",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
